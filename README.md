@@ -1,4 +1,4 @@
-# Deadbolt
+# 🔩 Deadbolt
 
 Deadbolt is a lean, professional pentest orchestrator for **AppSec engineers**.
 
@@ -8,6 +8,7 @@ It verifies whether the lock actually holds.
 
 Deadbolt is designed for **controlled, auditable reconnaissance and vulnerability assessment**, not noisy automation.
 
+![Deadbolt execution table](docs/images/run-table.png)
 
 ## What Deadbolt is (and isn’t)
 
