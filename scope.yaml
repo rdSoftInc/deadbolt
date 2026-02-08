@@ -1,0 +1,11 @@
+allow:
+  - example.com
+  - httpbin.org
+  - jsonplaceholder.typicode.com
+  - postman-echo.com
+  - httpstat.us
+  - juice-shop.herokuapp.com
+
+deny:
+  - google.com
+  - facebook.com

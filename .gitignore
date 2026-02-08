@@ -1,0 +1,92 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# =========================
+# Build / packaging
+# =========================
+build/
+dist/
+wheelhouse/
+
+# =========================
+# Deadbolt runtime artifacts
+# =========================
+outputs/
+.normalized/
+.raw/
+.work/
+
+# Explicitly ignore run outputs even if structure changes
+outputs/run_*/
+outputs/**
+
+# =========================
+# Deadbolt local caches
+# =========================
+.deadbolt/
+*.cache.json
+
+# =========================
+# Reports
+# =========================
+report.html
+reports/
+*.html
+
+# =========================
+# Wordlists (large / external)
+# =========================
+wordlists/*.txt
+!wordlists/README.md
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Docker
+# =========================
+*.tar
+docker-compose.override.yml
+
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# =========================
+# Secrets (just in case)
+# =========================
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# =========================
+# Test scratch
+# =========================
+tmp/
+scratch/

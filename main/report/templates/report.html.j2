@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Deadbolt Report – {{ meta.run_id }}</title>
+  <style>
+    .sev-critical { color: #b00020; font-weight: bold; }
+    .sev-high { color: #d32f2f; font-weight: bold; }
+    .sev-medium { color: #f57c00; font-weight: bold; }
+    .sev-low { color: #fbc02d; }
+    .sev-info { color: #777; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      color: #222;
+    }
+
+    h1, h2 {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f4f4f4;
+      text-align: left;
+    }
+
+    .tool {
+      font-weight: bold;
+    }
+
+    .mono {
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Deadbolt Security Report</h1>
+
+<h2>Run Metadata</h2>
+<ul>
+  <li><strong>Run ID:</strong> {{ meta.run_id }}</li>
+  <li><strong>Started:</strong> {{ meta.started_at }}</li>
+  <li><strong>Finished:</strong> {{ meta.finished_at }}</li>
+  <li><strong>Targets file:</strong> {{ meta.targets_file }}</li>
+  <li><strong>Deadbolt version:</strong> {{ meta.deadbolt_version }}</li>
+</ul>
+
+<h2>Tools Executed</h2>
+<ul>
+  {% for tool, info in meta.tools.items() %}
+    <li><strong>{{ tool }}</strong> – {{ info.image }} ({{ info.version }})</li>
+  {% endfor %}
+</ul>
+
+<hr/>
+
+<h2>Discovered Attack Surface</h2>
+<p>
+  {{ surface | length }} assets, endpoints, or input vectors discovered.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Asset</th>
+      <th>Type</th>
+      <th>Source Tool</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in surface %}
+    <tr>
+      <td class="mono">{{ f.asset }}</td>
+      <td>{{ f.kind }}</td>
+      <td class="tool">{{ f.tool }}</td>
+      <td>{{ f.status_code or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<hr/>
+
+<h2>Vulnerabilities</h2>
+
+<p>
+  Showing findings with severity
+  <strong>{{ min_severity | upper }}</strong> and above.
+</p>
+
+<p>
+  {{ findings | length }} vulnerabilities reported.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Asset</th>
+      <th>Title</th>
+      <th>Tool</th>
+      <th>Severity</th>
+      <th>Status</th>
+      <th>Technologies</th>
+      <th>CDN</th>
+      <th>Evidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in findings %}
+    <tr>
+      <td class="mono">{{ f.asset }}</td>
+      <td>{{ f.title }}</td>
+      <td class="tool">{{ f.tool }}</td>
+      <td>
+        {% if f.severity %}
+          <span class="sev-{{ f.severity }}">
+            {{ f.severity | upper }}
+          </span>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ f.status_code or "—" }}</td>
+      <td>
+        {% if f.technologies %}
+          {{ f.technologies | join(", ") }}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ f.cdn_name or "—" }}</td>
+      <td class="mono">{{ f.evidence_path }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+</body>
+</html>
