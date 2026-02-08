@@ -93,6 +93,29 @@ Activate:
 source .venv/bin/activate
 ```
 
+## Build scanner images (required)
+
+Deadbolt executes each scanner in an isolated Docker container.
+
+Before running a scan, the corresponding tool images must exist locally.
+This is a **one-time setup** unless tools are updated.
+
+Build images using the provided Dockerfiles:
+
+```bash
+docker build -t deadbolt-subfinder docker/subfinder
+docker build -t deadbolt-dnsx docker/dnsx
+docker build -t deadbolt-httpx docker/httpx
+docker build -t deadbolt-gau docker/gau
+docker build -t deadbolt-waybackurls docker/waybackurls
+docker build -t deadbolt-katana docker/katana
+docker build -t deadbolt-hakrawler docker/hakrawler
+docker build -t deadbolt-ffuf docker/ffuf
+docker build -t deadbolt-paramspider docker/paramspider
+docker build -t deadbolt-graphql-cop docker/graphql-cop
+docker build -t deadbolt-nuclei docker/nuclei
+```
+
 Install:
 
 ```bash
