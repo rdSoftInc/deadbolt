@@ -4,53 +4,113 @@
   <meta charset="UTF-8">
   <title>Deadbolt Report – {{ meta.run_id }}</title>
   <style>
-    .sev-critical { color: #b00020; font-weight: bold; }
-    .sev-high { color: #d32f2f; font-weight: bold; }
-    .sev-medium { color: #f57c00; font-weight: bold; }
-    .sev-low { color: #fbc02d; }
-    .sev-info { color: #777; }
+    :root {
+      --bg-main: #121212;
+      --bg-panel: #1e1e1e;
+      --bg-table-header: #2a2a2a;
+      --bg-row-alt: #181818;
+
+      --border: #333;
+      --text-main: #e0e0e0;
+      --text-muted: #9e9e9e;
+
+      --accent: #ff9800;
+    }
+
+    .sev-critical { color: #ff5252; font-weight: bold; }
+    .sev-high     { color: #ff7043; font-weight: bold; }
+    .sev-medium   { color: #ffb74d; font-weight: bold; }
+    .sev-low      { color: #ffd54f; }
+    .sev-info     { color: #9e9e9e; }
 
     body {
       font-family: Arial, sans-serif;
       margin: 40px;
-      color: #222;
+      background-color: var(--bg-main);
+      color: var(--text-main);
     }
 
     h1, h2 {
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid var(--border);
       padding-bottom: 6px;
+      color: #ffffff;
+    }
+
+    h1 {
+      font-size: 1.8em;
+    }
+
+    h2 {
+      margin-top: 32px;
+      font-size: 1.3em;
+    }
+
+    ul {
+      background: var(--bg-panel);
+      padding: 16px 24px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
       margin-top: 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
     }
 
     th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      border: 1px solid var(--border);
+      padding: 10px;
       vertical-align: top;
     }
 
     th {
-      background: #f4f4f4;
+      background: var(--bg-table-header);
       text-align: left;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    tbody tr:nth-child(even) {
+      background: var(--bg-row-alt);
     }
 
     .tool {
       font-weight: bold;
+      color: var(--accent);
     }
 
     .mono {
-      font-family: monospace;
+      font-family: Consolas, Monaco, monospace;
       font-size: 0.9em;
+      color: #d0d0d0;
+      word-break: break-all;
+    }
+
+    p {
+      color: var(--text-muted);
+    }
+
+    strong {
+      color: #ffffff;
     }
   </style>
 </head>
 <body>
 
-<h1>Deadbolt Security Report</h1>
+<h1> 🔩 Deadbolt Security Report</h1>
 
 <h2>Run Metadata</h2>
 <ul>

@@ -148,11 +148,18 @@ deadbolt run targets/lab.txt
 ```text
 outputs/run_YYYYMMDD_HHMMSS/
 ├─ meta.json
+├─ state.json
+├─ report.html
 ├─ raw/
 ├─ work/
-├─ normalized/
-└─ report.html
+└─ normalized/
 ```
+
+## Report
+
+![Deadbolt Report Metadata](docs/images/report-metadata.png)
+
+![Deadbolt Report Findings](docs/images/report-findings.png)
 
 ## Philosophy
 
