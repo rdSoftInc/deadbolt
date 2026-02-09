@@ -1,3 +1,17 @@
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file runner.py
+# @brief paramspider execution wrapper.
+#
+# This module defines the execution logic for paramspider using a containerized
+# runtime. paramspider discovers query parameters associated with target URLs
+# and outputs parameterized endpoints.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 import subprocess
 import tempfile
@@ -5,15 +19,22 @@ import tempfile
 
 def run_paramspider(targets: Path, output: Path):
     """
-    paramspider – parameter discovery.
+    Execute paramspider for parameter discovery.
 
     Consumes:
       - assets (URLs only)
 
     Produces:
-      - paths (URLs with parameters)
+      - paths (URLs containing discovered parameters)
+
+    Notes:
+      - Targets without a URL scheme are ignored
+      - Execution is performed per URL to avoid cross-contamination
     """
 
+    # -------------------------------
+    # Filter valid URL targets
+    # -------------------------------
     urls = [
         l.strip()
         for l in targets.read_text(encoding="utf-8").splitlines()
@@ -26,6 +47,9 @@ def run_paramspider(targets: Path, output: Path):
 
     results = []
 
+    # -------------------------------
+    # Per-URL execution
+    # -------------------------------
     for url in urls:
         with tempfile.TemporaryDirectory() as tmp:
             proc = subprocess.run(
@@ -47,4 +71,10 @@ def run_paramspider(targets: Path, output: Path):
                 if "=" in line:
                     results.append(line.strip())
 
-    output.write_text("\n".join(sorted(set(results))), encoding="utf-8")
+    # -------------------------------
+    # Deduplicate and persist output
+    # -------------------------------
+    output.write_text(
+        "\n".join(sorted(set(results))),
+        encoding="utf-8",
+    )

@@ -49,12 +49,6 @@ reports/
 *.html
 
 # =========================
-# Wordlists (large / external)
-# =========================
-wordlists/*.txt
-!wordlists/README.md
-
-# =========================
 # Logs
 # =========================
 *.log

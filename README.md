@@ -1,107 +1,142 @@
 # 🔩 Deadbolt
 
-Deadbolt is a lean, professional pentest orchestrator for **AppSec engineers**.
+**Deadbolt** is a lean, professional pentest orchestrator for **AppSec engineers** and **security teams**.
 
 It does not guess.  
 It does not over-scan.  
 It verifies whether the lock actually holds.
 
-Deadbolt is designed for **controlled, auditable reconnaissance and vulnerability assessment**, not noisy automation.
+Deadbolt is built for **controlled, auditable reconnaissance and security assessment**, not noisy automation or blind scanning.
+
+![Deadbolt execution table inprogress](docs/images/run-table-inprogress.png)
 
 ![Deadbolt execution table](docs/images/run-table.png)
 
+![Deadbolt mobile execution table](docs/images/mobile-run-table.png)
+
 ## What Deadbolt is (and isn’t)
 
-Deadbolt is:
+### Deadbolt **is**
 
-- An orchestrator, not a monolithic scanner
-- Deterministic and resumable
-- Designed for real corporate pentests and AppSec workflows
-- Built to explain *why* something was found, not just *that* it was found
+- A **tool orchestrator**, not a monolithic scanner
+- Deterministic, resumable, and auditable
+- Designed for real-world AppSec and pentest workflows
+- Explicit about **data flow** and **tool responsibility**
+- Focused on explaining *why* something was found
 
-Deadbolt is **not**:
+### Deadbolt is **not**
 
 - A “click-run-everything” scanner
-- A replacement for human reasoning
 - A brute-force automation framework
+- A replacement for human reasoning or validation
 
-## Core features
 
-- Containerized scanner execution (Docker, fully isolated)
+## Core capabilities
+
+- Containerized execution (Docker, fully isolated per tool)
 - **Hard scope enforcement** (runs refuse to start if scope is violated)
-- Deterministic multi-phase pipeline:
-  - Discovery → Enumeration → Vulnerability
-- Explicit data flow between tools (assets → paths → findings)
-- Resume-safe execution with hashing
-- Observable execution with live status table
+- Deterministic, phase-based pipelines
+- Explicit artifact flow between tools
+- Resume-safe execution using content hashing
+- Live execution visibility (Rich execution table)
 - Raw evidence preserved per tool
 - Normalized findings schema
 - Auditable run metadata (`meta.json`)
-- Tool version detection + update awareness
+- Tool version detection and update awareness
 - HTML report generation
+- Multi-domain support:
+  - 🌐 Web
+  - 🤖 Android (APK)
+  - 🍎 iOS (IPA)
+
+## Execution model
+
+### Web pipeline
+
+```
+Discovery → Enumeration → Vulnerability
+```
+
+Artifacts flow explicitly:
+
+```
+targets → assets → paths → findings
+```
+
+### Mobile pipelines
+
+- **Android**: Static analysis (jadx, MobSF)
+- **iOS**: Static analysis (MobSF)
+
+Each tool:
+
+- Declares what it consumes
+- Declares what it produces
+- Runs in isolation
+- Emits normalized findings
 
 ## Supported tooling
 
-### Discovery
+### Web — Discovery
 
-- subfinder – subdomain discovery
-- dnsx – DNS resolution / refinement
-- httpx – HTTP(S) validation & classification
+- subfinder – subdomain discovery  
+- dnsx – DNS resolution  
+- httpx – HTTP(S) validation & classification  
 
-### Enumeration
+### Web — Enumeration
 
-- gau – historical URL discovery
-- waybackurls – archive-based endpoint recovery
-- katana – crawler-based surface expansion
-- hakrawler – HTML link extraction
-- ffuf – endpoint discovery via fuzzing
-- httpx (paths mode) – path validation & enrichment
+- gau – historical URL discovery  
+- waybackurls – archive-based endpoint recovery  
+- katana – crawler-based surface expansion  
+- hakrawler – HTML link extraction  
+- ffuf – endpoint discovery via fuzzing  
+- httpx (paths mode) – path validation & enrichment  
 
-### Input & API 
+### Web — Input & API
 
-- paramspider – parameter discovery
-- graphql-cop – GraphQL endpoint analysis
+- paramspider – parameter discovery  
+- graphql-cop – GraphQL endpoint analysis  
 
-### Vulnerability
+### Web — Vulnerability
 
-- nuclei – template-based vulnerability detection
+- nuclei – template-based vulnerability detection  
 
+### Mobile
+
+- jadx – Android static analysis
+- MobSF – Android & iOS security analysis
 
 ## Requirements
 
-- Python 3.10+
-- Docker Desktop (WSL2 on Windows recommended)
+- Python **3.10+**
+- Docker Desktop (WSL2 recommended on Windows)
 - Git
-
 
 ## Clone the repository
 
 ```bash
-git clone https://github.com/your-org/deadbolt.git
+git clone https://github.com/<your-org>/deadbolt.git
 cd deadbolt
 ```
-
 
 ## Python environment
 
 ```bash
 python -m venv .venv
+source .venv/bin/activate
 ```
 
-Activate:
+Install Deadbolt:
 
 ```bash
-source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
 ```
 
 ## Build scanner images (required)
 
-Deadbolt executes each scanner in an isolated Docker container.
-
-Before running a scan, the corresponding tool images must exist locally.
-This is a **one-time setup** unless tools are updated.
-
-Build images using the provided Dockerfiles:
+Deadbolt executes each tool inside an isolated Docker container.  
+Images must be built **once** before running scans.
 
 ```bash
 docker build -t deadbolt-subfinder docker/subfinder
@@ -115,18 +150,40 @@ docker build -t deadbolt-ffuf docker/ffuf
 docker build -t deadbolt-paramspider docker/paramspider
 docker build -t deadbolt-graphql-cop docker/graphql-cop
 docker build -t deadbolt-nuclei docker/nuclei
+docker build -t deadbolt-jadx docker/jadx
 ```
 
-Install:
+## MobSF setup (manual, one-time)
+
+Deadbolt uses the **official MobSF Docker image** for Android and iOS analysis.
+This image is **not built locally** and must be pulled manually once.
+
+### Pull MobSF image
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -e .
+docker pull opensecurity/mobile-security-framework-mobsf:latest
 ```
 
-## Configure scope (mandatory)
+Verify image is available
 
-In `scope.yaml`.
+```bash
+docker images opensecurity/mobile-security-framework-mobsf
+```
+
+Deadbolt will automatically:
+
+- Start the MobSF container when required
+- Reuse an existing running MobSF container if present
+- Extract the MobSF API key from container logs
+- Wait for the MobSF API to become ready before scanning
+
+No additional MobSF configuration is required beyond pulling the image.
+
+## Targets & scope
+
+### Scope configuration (mandatory)
+
+Define scope in `scope.yaml`:
 
 ```yaml
 allow:
@@ -137,10 +194,26 @@ deny:
   - google.com
 ```
 
-## Run
+Runs **fail fast** if scope is violated.
+
+## Running scans
+
+### Web
 
 ```bash
-deadbolt run targets/lab.txt
+deadbolt web targets/web/lab.txt
+```
+
+### Android
+
+```bash
+deadbolt android targets/android/AndroGoat.apk
+```
+
+### iOS
+
+```bash
+deadbolt ios targets/ios/app.ipa
 ```
 
 ## Output structure
@@ -155,28 +228,19 @@ outputs/run_YYYYMMDD_HHMMSS/
 └─ normalized/
 ```
 
-## Report
-
-![Deadbolt Report Metadata](docs/images/report-metadata.png)
-
-![Deadbolt Report Findings](docs/images/report-findings.png)
-
 ## Philosophy
 
 Deadbolt prioritizes:
 
 - Correctness
-- Auditability
 - Control
+- Auditability
 
 Every result is traceable to its origin.
+
 
 ## License
 
 Deadbolt is released under the **MIT License**.
-
-You are free to use, modify, and distribute this project — including for
-commercial purposes — provided that proper credit is given and the license
-is included.
 
 © 2026 Rolstan Robert D'souza

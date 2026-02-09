@@ -1,3 +1,17 @@
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file runner.py
+# @brief waybackurls execution wrapper.
+#
+# This module defines the execution logic for waybackurls using a containerized
+# runtime. waybackurls performs historical URL discovery based on domain names
+# and retrieves endpoints from archival sources such as the Wayback Machine.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 from urllib.parse import urlparse
 from main.execution.docker import run_container
@@ -5,7 +19,10 @@ from main.execution.docker import run_container
 
 def _normalize_domains(input_file: Path) -> Path:
     """
-    Extract bare domains from a mixed asset list.
+    Extract bare domain names from a mixed asset list.
+
+    Input may contain domains or full URLs. All values are normalized
+    to lowercase hostnames to ensure correct waybackurls execution.
     """
     domains = set()
 
@@ -25,19 +42,27 @@ def _normalize_domains(input_file: Path) -> Path:
                 domains.add(host.lower())
 
     out = input_file.parent / "wayback_domains.txt"
-    out.write_text("\n".join(sorted(domains)) + "\n", encoding="utf-8")
+    out.write_text(
+        "\n".join(sorted(domains)) + "\n",
+        encoding="utf-8",
+    )
     return out
 
 
 def run_waybackurls(targets: Path, output: Path):
     """
-    waybackurls – historical URL discovery.
+    Execute waybackurls for historical URL discovery.
 
     Consumes:
-      - assets (mixed domains + URLs)
+      - assets (mixed domains and URLs)
 
     Produces:
       - paths (historical endpoints)
+
+    Strategy:
+      - Normalize all inputs to bare domains
+      - Pipe domains into waybackurls via shell entrypoint
+      - Capture plain-text URL output
     """
     domains_file = _normalize_domains(targets)
 
@@ -46,7 +71,7 @@ def run_waybackurls(targets: Path, output: Path):
         entrypoint="sh",
         args=[
             "-c",
-            f"cat /input/domains.txt | waybackurls > /output/{output.name}"
+            f"cat /input/domains.txt | waybackurls > /output/{output.name}",
         ],
         mounts={
             domains_file: "/input/domains.txt",

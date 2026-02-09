@@ -1,3 +1,10 @@
+# Scope configuration for Deadbolt
+#
+# Notes:
+# - Entries must be hostnames only (no scheme, no paths)
+# - Matching is exact (no wildcards)
+# - Targets outside the allow list will cause the run to fail
+
 allow:
   - example.com
   - httpbin.org

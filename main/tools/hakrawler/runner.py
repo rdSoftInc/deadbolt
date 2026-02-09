@@ -1,19 +1,39 @@
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file runner.py
+# @brief hakrawler execution wrapper.
+#
+# This module defines the execution logic for hakrawler using a containerized
+# runtime. hakrawler performs client-side crawling and requires fully
+# qualified URLs as input.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 import subprocess
 
 
 def run_hakrawler(targets: Path, output: Path):
     """
-    hakrawler – client-side crawling.
+    Execute hakrawler for client-side path discovery.
 
     Consumes:
-      - assets (URLs only)
+      - assets (URLs only; scheme required)
 
     Produces:
-      - paths
+      - paths (discovered client-side URLs)
+
+    Notes:
+      - Targets without a URL scheme are ignored
+      - No crawling occurs if no valid URLs are provided
     """
 
-    # Filter only URLs (hakrawler requires scheme)
+    # -------------------------------
+    # Filter valid URL targets
+    # -------------------------------
     urls = []
     for line in targets.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -25,6 +45,9 @@ def run_hakrawler(targets: Path, output: Path):
         output.write_text("")
         return
 
+    # -------------------------------
+    # Container execution (stdin-fed)
+    # -------------------------------
     proc = subprocess.run(
         ["docker", "run", "--rm", "-i", "deadbolt-hakrawler"],
         input="\n".join(urls),

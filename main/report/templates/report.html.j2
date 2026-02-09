@@ -1,8 +1,36 @@
+<!--
+SPDX-License-Identifier: MIT
+
+------------------------------------------------------------------------------
+@file report.html.j2
+@brief HTML report template for Deadbolt scan results.
+
+This Jinja2 template renders the final Deadbolt security report. It consumes
+scan metadata, normalized findings, and derived attack surface information
+to produce a standalone, human-readable HTML report.
+
+Template context variables:
+- meta           : Run metadata (meta.json)
+- domain         : Scan domain (web / android / ios)
+- surface        : Non-vulnerability findings (attack surface)
+- findings       : Severity-filtered vulnerability findings
+- min_severity   : Minimum severity threshold applied
+
+Author: Rolstan Robert D'souza
+Date: 2026
+------------------------------------------------------------------------------
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Deadbolt Report – {{ meta.run_id }}</title>
+
+  <!--
+    Embedded stylesheet.
+    The report is fully self-contained and requires no external assets.
+  -->
   <style>
     :root {
       --bg-main: #121212;
@@ -17,6 +45,7 @@
       --accent: #ff9800;
     }
 
+    /* Severity color mapping */
     .sev-critical { color: #ff5252; font-weight: bold; }
     .sev-high     { color: #ff7043; font-weight: bold; }
     .sev-medium   { color: #ffb74d; font-weight: bold; }
@@ -108,9 +137,22 @@
     }
   </style>
 </head>
+
 <body>
 
-<h1> 🔩 Deadbolt Security Report</h1>
+<!-- ========================================================= -->
+<!-- Report Header                                             -->
+<!-- ========================================================= -->
+
+<h1>🔩 Deadbolt Security Report</h1>
+
+<p>
+  <strong>Scan domain:</strong> {{ domain | upper }}
+</p>
+
+<!-- ========================================================= -->
+<!-- Run Metadata                                               -->
+<!-- ========================================================= -->
 
 <h2>Run Metadata</h2>
 <ul>
@@ -121,16 +163,27 @@
   <li><strong>Deadbolt version:</strong> {{ meta.deadbolt_version }}</li>
 </ul>
 
+<!-- ========================================================= -->
+<!-- Tools Executed                                             -->
+<!-- ========================================================= -->
+
 <h2>Tools Executed</h2>
 <ul>
   {% for tool, info in meta.tools.items() %}
-    <li><strong>{{ tool }}</strong> – {{ info.image }} ({{ info.version }})</li>
+    <li>
+      <strong>{{ tool }}</strong> – {{ info.image }} ({{ info.version }})
+    </li>
   {% endfor %}
 </ul>
 
 <hr/>
 
+<!-- ========================================================= -->
+<!-- Attack Surface                                             -->
+<!-- ========================================================= -->
+
 <h2>Discovered Attack Surface</h2>
+
 <p>
   {{ surface | length }} assets, endpoints, or input vectors discovered.
 </p>
@@ -142,6 +195,7 @@
       <th>Type</th>
       <th>Source Tool</th>
       <th>Status</th>
+      <th>Details</th>
     </tr>
   </thead>
   <tbody>
@@ -151,12 +205,25 @@
       <td>{{ f.kind }}</td>
       <td class="tool">{{ f.tool }}</td>
       <td>{{ f.status_code or "—" }}</td>
+      <td class="mono">
+        {% if f.metadata %}
+          {% for k, v in f.metadata.items() %}
+            <strong>{{ k }}:</strong> {{ v }}<br/>
+          {% endfor %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 
 <hr/>
+
+<!-- ========================================================= -->
+<!-- Vulnerabilities                                           -->
+<!-- ========================================================= -->
 
 <h2>Vulnerabilities</h2>
 
@@ -179,6 +246,7 @@
       <th>Status</th>
       <th>Technologies</th>
       <th>CDN</th>
+      <th>Details</th>
       <th>Evidence</th>
     </tr>
   </thead>
@@ -206,6 +274,15 @@
         {% endif %}
       </td>
       <td>{{ f.cdn_name or "—" }}</td>
+      <td class="mono">
+        {% if f.metadata %}
+          {% for k, v in f.metadata.items() %}
+            <strong>{{ k }}:</strong> {{ v }}<br/>
+          {% endfor %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
       <td class="mono">{{ f.evidence_path }}</td>
     </tr>
     {% endfor %}

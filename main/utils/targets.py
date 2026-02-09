@@ -1,12 +1,30 @@
-# main/utils/targets.py
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file targets.py
+# @brief Target normalization helpers.
+#
+# This module provides utilities for extracting canonical domains from
+# user-supplied target files containing domains or URLs.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 from typing import List
 from urllib.parse import urlparse
 
+
 def _extract_domains_from_targets(targets_file: Path) -> List[str]:
     """
-    Accepts either domains or URLs in targets file.
-    Returns unique domains (hostnames).
+    Extract unique domain names from a targets file.
+
+    The input file may contain:
+      - Bare domains
+      - Fully-qualified URLs
+
+    Output is a de-duplicated list of lowercase hostnames.
     """
     domains: List[str] = []
     seen = set()
@@ -17,7 +35,7 @@ def _extract_domains_from_targets(targets_file: Path) -> List[str]:
             if not t:
                 continue
 
-            # Try URL first
+            # Prefer URL parsing
             host = urlparse(t).hostname
             if not host:
                 # Fallback: treat raw string as a domain

@@ -1,3 +1,18 @@
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file parser.py
+# @brief ffuf output parser.
+#
+# This module parses ffuf JSON output and normalizes discovered endpoints
+# into Deadbolt Finding objects of kind "path". Each unique URL is treated
+# as a discovered endpoint, with duplicate hits aggregated via an occurrence
+# counter.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 import json
 from pathlib import Path
 from datetime import datetime, timezone
@@ -7,6 +22,13 @@ from main.schema.normalize import Finding
 
 
 def parse_ffuf(raw_file: Path) -> List[Finding]:
+    """
+    Parse ffuf JSON output into normalized findings.
+
+    ffuf emits a JSON document containing a list of fuzzing results. Each
+    result with a valid URL is normalized into a Finding of kind "path".
+    Duplicate URLs increment the occurrence counter.
+    """
     findings = {}
     timestamp = datetime.now(timezone.utc)
 

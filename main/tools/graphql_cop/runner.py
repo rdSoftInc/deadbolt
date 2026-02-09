@@ -1,8 +1,23 @@
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file runner.py
+# @brief graphql-cop execution wrapper.
+#
+# This module defines the execution logic for graphql-cop. Unlike most tools,
+# graphql-cop is executed directly per endpoint rather than via the shared
+# run_container helper, due to its probing-style execution model.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 import subprocess
 import tempfile
 
 
+# Common GraphQL endpoint paths to probe
 GRAPHQL_COMMON_PATHS = [
     "/graphql",
     "/api/graphql",
@@ -13,15 +28,24 @@ GRAPHQL_COMMON_PATHS = [
 
 def run_graphql_cop(targets: Path, output: Path):
     """
-    graphql-cop – GraphQL endpoint analysis.
+    Execute graphql-cop against candidate GraphQL endpoints.
 
     Consumes:
       - assets (URLs only)
 
     Produces:
-      - paths (GraphQL endpoints & discovered operations)
+      - paths (GraphQL endpoints and discovered operations)
+
+    Strategy:
+      - Extract base URLs from targets
+      - Probe common GraphQL endpoint paths
+      - Execute graphql-cop per endpoint
+      - Aggregate unique results
     """
 
+    # -------------------------------
+    # Extract valid base URLs
+    # -------------------------------
     urls = [
         l.strip().rstrip("/")
         for l in targets.read_text(encoding="utf-8").splitlines()
@@ -34,11 +58,14 @@ def run_graphql_cop(targets: Path, output: Path):
 
     results = []
 
+    # -------------------------------
+    # Endpoint probing
+    # -------------------------------
     for base in urls:
         for suffix in GRAPHQL_COMMON_PATHS:
             endpoint = f"{base}{suffix}"
 
-            with tempfile.TemporaryDirectory() as tmp:
+            with tempfile.TemporaryDirectory():
                 proc = subprocess.run(
                     [
                         "docker", "run", "--rm",
@@ -59,4 +86,10 @@ def run_graphql_cop(targets: Path, output: Path):
                     if line:
                         results.append(f"{endpoint} :: {line}")
 
-    output.write_text("\n".join(sorted(set(results))), encoding="utf-8")
+    # -------------------------------
+    # Deduplicate and persist output
+    # -------------------------------
+    output.write_text(
+        "\n".join(sorted(set(results))),
+        encoding="utf-8",
+    )

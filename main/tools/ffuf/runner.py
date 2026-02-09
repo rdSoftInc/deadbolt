@@ -1,22 +1,41 @@
+# SPDX-License-Identifier: MIT
+#
+# -----------------------------------------------------------------------------
+# @file runner.py
+# @brief ffuf execution wrapper.
+#
+# This module defines the execution logic for ffuf using a containerized
+# runtime. ffuf is used for endpoint discovery via host × path fuzzing
+# with a deterministic wordlist.
+#
+# Author: Rolstan Robert D'souza
+# Date: 2026
+# -----------------------------------------------------------------------------
+
 from pathlib import Path
 from main.execution.docker import run_container
 
 
 def run_ffuf(targets: Path, output: Path):
     """
-    ffuf endpoint discovery.
+    Execute ffuf for endpoint discovery.
 
     Consumes:
-      - assets (domains / URLs)
+      - assets (domains or base URLs)
 
     Produces:
-      - paths (JSON output)
+      - paths (JSON output containing discovered endpoints)
 
     Strategy:
-      - host × path fuzzing
-      - no recursion
-      - deterministic wordlist
+      - Normalize targets to bare hosts
+      - Host × path fuzzing
+      - No recursion
+      - Deterministic wordlist
     """
+
+    # -------------------------------
+    # Normalize target hosts
+    # -------------------------------
     normalized = output.parent / "ffuf_targets.txt"
 
     lines = targets.read_text().splitlines()
@@ -26,18 +45,27 @@ def run_ffuf(targets: Path, output: Path):
         l = l.strip()
         if not l:
             continue
+
+        # Strip URL scheme if present
         if l.startswith("http://") or l.startswith("https://"):
             l = l.split("://", 1)[1]
+
         hosts.append(l)
 
     normalized.write_text("\n".join(hosts))
 
+    # -------------------------------
+    # Wordlist validation
+    # -------------------------------
     wordlist = Path("wordlists/common.txt")
     if not wordlist.is_file():
-      raise RuntimeError(
-          "wordlists/common.txt must exist and be a file (ffuf wordlist missing)"
-      )
+        raise RuntimeError(
+            "wordlists/common.txt must exist and be a file (ffuf wordlist missing)"
+        )
 
+    # -------------------------------
+    # Container execution
+    # -------------------------------
     run_container(
         image="deadbolt-ffuf",
         args=[
