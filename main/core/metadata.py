@@ -28,7 +28,7 @@ def write_metadata(
     started_at: datetime,
     finished_at: datetime,
     domain: str,
-    deadbolt_version: str = "0.1.0",
+    deadbolt_version: str = "1.1.0",
     errors: Optional[Dict[str, str]] = None,
 ):
     """

@@ -25,6 +25,8 @@ REPO_MAP = {
     "deadbolt-subfinder": "projectdiscovery/subfinder",
     "deadbolt-dnsx": "projectdiscovery/dnsx",
     "deadbolt-httpx": "projectdiscovery/httpx",
+    "deadbolt-apktool": "iBotPeaches/Apktool",
+    "deadbolt-androguard": "androguard/androguard",
 
     # Enumeration
     "deadbolt-katana": "projectdiscovery/katana",
@@ -38,8 +40,7 @@ REPO_MAP = {
     "deadbolt-paramspider": "devanshbatham/ParamSpider",
     "deadbolt-graphql-cop": "dolevf/graphql-cop",
     "deadbolt-jadx": "skylot/jadx",
-    "opensecurity/mobile-security-framework-mobsf":
-        "MobSF/Mobile-Security-Framework-MobSF",
+    "opensecurity/mobile-security-framework-mobsf":"MobSF/Mobile-Security-Framework-MobSF",
 }
 
 

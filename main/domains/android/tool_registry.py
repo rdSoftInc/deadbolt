@@ -58,6 +58,19 @@ class ToolSpec:
 # Declarative registry of Android analysis tools
 TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
+    # ---------------- Static Analysis ----------------
+
+    "apktool": ToolSpec(
+        name="apktool",
+        image="deadbolt-apktool",
+        phase="static",
+        consumes="apk",
+        produces="assets",
+        produces_severity=False,
+        severity_gated=False,
+        parallel=False,
+    ),
+
     "jadx": ToolSpec(
         name="jadx",
         image="deadbolt-jadx",
@@ -69,6 +82,19 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
         parallel=False,
     ),
 
+    "androguard": ToolSpec(
+        name="androguard",
+        image="deadbolt-androguard",
+        phase="static",
+        consumes="apk",
+        produces="findings",
+        produces_severity=True,
+        severity_gated=False,
+        parallel=False,
+    ),
+
+    # ---------------- Deep Analysis ----------------
+
     "mobsf": ToolSpec(
         name="mobsf",
         image="opensecurity/mobile-security-framework-mobsf",
@@ -79,5 +105,4 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
         severity_gated=False,
         parallel=False,
     ),
-
 }

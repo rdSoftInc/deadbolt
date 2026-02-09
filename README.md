@@ -8,11 +8,11 @@ It verifies whether the lock actually holds.
 
 Deadbolt is built for **controlled, auditable reconnaissance and security assessment**, not noisy automation or blind scanning.
 
-![Deadbolt execution table inprogress](docs/images/run-table-inprogress.png)
+![Deadbolt execution table inprogress](images/run-table-inprogress.png)
 
-![Deadbolt execution table](docs/images/run-table.png)
+![Deadbolt execution table](images/run-table.png)
 
-![Deadbolt mobile execution table](docs/images/mobile-run-table.png)
+![Deadbolt mobile execution table](images/mobile-run-table.png)
 
 ## What Deadbolt is (and isn’t)
 
@@ -65,7 +65,7 @@ targets → assets → paths → findings
 
 ### Mobile pipelines
 
-- **Android**: Static analysis (jadx, MobSF)
+- **Android**: Static analysis (apktool, androguard, jadx, MobSF)
 - **iOS**: Static analysis (MobSF)
 
 Each tool:
@@ -79,32 +79,34 @@ Each tool:
 
 ### Web — Discovery
 
-- subfinder – subdomain discovery  
-- dnsx – DNS resolution  
-- httpx – HTTP(S) validation & classification  
+- **subfinder** – subdomain discovery  
+- **dnsx** – DNS resolution  
+- **httpx** – HTTP(S) validation & classification  
 
 ### Web — Enumeration
 
-- gau – historical URL discovery  
-- waybackurls – archive-based endpoint recovery  
-- katana – crawler-based surface expansion  
-- hakrawler – HTML link extraction  
-- ffuf – endpoint discovery via fuzzing  
-- httpx (paths mode) – path validation & enrichment  
+- **gau** – historical URL discovery  
+- **waybackurls** – archive-based endpoint recovery  
+- **katana** – crawler-based surface expansion  
+- **hakrawler** – HTML link extraction  
+- **ffuf** – endpoint discovery via fuzzing  
+- **httpx (paths mode)** – path validation & enrichment  
 
 ### Web — Input & API
 
-- paramspider – parameter discovery  
-- graphql-cop – GraphQL endpoint analysis  
+- **paramspider** – parameter discovery  
+- **graphql-cop** – GraphQL endpoint analysis  
 
 ### Web — Vulnerability
 
-- nuclei – template-based vulnerability detection  
+- **nuclei** – template-based vulnerability detection  
 
 ### Mobile
 
-- jadx – Android static analysis
-- MobSF – Android & iOS security analysis
+- **apktool** – Android resource and manifest decoding for declared attack surface and configuration analysis  
+- **androguard** – Semantic Android analysis (permissions, signing, exported components, application flags)  
+- **jadx** – Dalvik bytecode decompilation for code-level inspection and hardcoded secret discovery  
+- **MobSF** – Correlated Android & iOS security analysis combining manifest, code, crypto, and network signals
 
 ## Requirements
 
@@ -115,7 +117,7 @@ Each tool:
 ## Clone the repository
 
 ```bash
-git clone https://github.com/<your-org>/deadbolt.git
+git clone https://github.com/rdSoftInc/deadbolt.git
 cd deadbolt
 ```
 
@@ -151,6 +153,8 @@ docker build -t deadbolt-paramspider docker/paramspider
 docker build -t deadbolt-graphql-cop docker/graphql-cop
 docker build -t deadbolt-nuclei docker/nuclei
 docker build -t deadbolt-jadx docker/jadx
+docker build -t deadbolt-apktool docker/apktool
+docker build -t deadbolt-androguard docker/androguard
 ```
 
 ## MobSF setup (manual, one-time)
