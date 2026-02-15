@@ -186,7 +186,7 @@ class ExecutionTable:
         )
 
         table.add_column("Tool", style="bold cyan", no_wrap=True)
-        table.add_column("Version", style="dim")
+        table.add_column("Version / Commit", style="dim")
         table.add_column("Update", justify="center", style="bold")
         table.add_column("Status", justify="center")
         table.add_column("Duration", justify="right", style="magenta")

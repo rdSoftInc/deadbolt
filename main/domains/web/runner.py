@@ -15,6 +15,7 @@
 
 import json
 import threading
+import traceback
 from typing import Optional, Dict, List
 from datetime import datetime, timezone
 from pathlib import Path
@@ -183,15 +184,15 @@ def run_web(
                     resolve_latest=get_latest_version,
                 )
 
-                table.versions[tool.name] = installed
+                table.versions[tool.name] = installed or "unknown"
                 table.latest_versions[tool.name] = latest
 
-                if latest is None:
+                if installed == "unknown" or latest is None:
                     table.update_status[tool.name] = "-"
                 elif installed == latest:
                     table.update_status[tool.name] = "latest"
                 else:
-                    table.update_status[tool.name] = latest
+                    table.update_status[tool.name] = f"→ {latest}"
 
                 table._refresh()
 
@@ -317,7 +318,12 @@ def run_web(
                     )
                 except Exception as e:
                     table.tool_failed(tool.name)
-                    tool_errors[tool.name] = str(e)
+
+                    error_message = str(e)
+                    error_type = type(e).__name__
+                    error_trace = traceback.format_exc(limit=5)
+
+                    tool_errors[tool.name] = error_message
 
                     state["tools"][tool.name] = {
                         "status": "failed",
@@ -326,7 +332,13 @@ def run_web(
                         "input_hash": input_hash,
                         "started_at": tool_started_at.isoformat(),
                         "finished_at": datetime.now(timezone.utc).isoformat(),
+                        "error": {
+                            "type": error_type,
+                            "message": error_message,
+                            "trace": error_trace,
+                        },
                     }
+
                     save_state(state_file, state)
                     continue
 

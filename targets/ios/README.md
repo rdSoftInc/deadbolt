@@ -1,30 +1,41 @@
-# iOS Test Targets
+# IOS Test Targets
 
-This directory is reserved for iOS application packages (`.ipa`) used for
-testing and evaluation of Deadbolt’s iOS static analysis pipeline.
+This directory contains IOS App Store Package (IPAs) used **only for
+testing and evaluation** of Deadbolt’s IOS static analysis pipeline.
 
----
+## iGoat.apk
 
-## Current Status
+**iGoat** is an intentionally vulnerable IOS application designed for
+learning, testing, and demonstrating common mobile application security issues.
 
-At present, no iOS test application is included in this repository.
+The version included here is sourced from the following upstream project and is
+used as a **test target only**.
 
-Unlike Android APKs, iOS IPA files are not commonly distributed publicly due to
-Apple’s platform restrictions and code-signing requirements.
+### Original Project
 
----
+- **Repository:** https://github.com/OWASP/iGoat-Swift
+- **Purpose:** Deliberately vulnerable IOS application for security testing
+  and education
 
-## Intended Use
+### License
 
-This directory exists to support:
+OWASP iGoat is distributed under the license specified by its original project.
+This repository does **not** claim ownership, authorship, or modification of the
+IPA.
 
-- Internal or authorized testing where a legally obtained IPA is available
-- Research and development of Deadbolt’s iOS analysis features
+The IPA is included **unchanged** and **solely for security research and testing
+purposes**.
 
----
 
-## Notes
+## Usage Notice
 
-- Do **not** add IPA files unless you have explicit permission to analyze them
-- Use only test applications or apps you own the rights to
-- Keep all testing within legal and ethical boundaries
+- This application is **intentionally insecure**
+- Do **not** install on personal or production devices
+- Use only in controlled environments (emulators, test VMs)
+
+
+## Attribution
+
+This project acknowledges and credits the contributors of the
+**OWASP/iGoat-Swift** repository for providing a deliberately vulnerable
+IOS application used for security research and education.

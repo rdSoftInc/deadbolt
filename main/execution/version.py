@@ -65,6 +65,10 @@ def get_tool_version(image: str) -> str:
     if image == "deadbolt-waybackurls":
         return "0.1.0"
     
+    # linkfinder does not have versioned releases and does not expose version info, hence commit hash is used
+    if image == "deadbolt-linkfinder":
+        return "1debac5"
+    
     # apktool version is available via docker run --rm --entrypoint /bin/sh deadbolt-apktool -c "java -jar /usr/local/bin/apktool.jar --version" but better to be static
     if image == "deadbolt-apktool":
         return "2.12.1"

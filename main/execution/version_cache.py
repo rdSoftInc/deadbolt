@@ -18,11 +18,13 @@
 
 from pathlib import Path
 from datetime import datetime, timezone
+import threading
 import json
 
 # Cache location and defaults
 CACHE_DIR = Path.home() / ".deadbolt"
 CACHE_FILE = CACHE_DIR / "version_cache.json"
+_CACHE_LOCK = threading.Lock()
 DEFAULT_TTL = 3600  # 1 hour
 
 # Values considered invalid for caching purposes
@@ -31,10 +33,10 @@ INVALID_VALUES = {"unknown", "checking…", "-", "rolling", None}
 
 def load_cache() -> dict:
     """
-    Load the version cache from disk.
+    Load the version cache from disk safely.
 
-    If the cache file does not exist, a new cache structure with default
-    values is returned.
+    If the cache file does not exist, is empty, or is corrupted,
+    a new default cache structure is returned.
     """
     if not CACHE_FILE.exists():
         return {
@@ -43,20 +45,39 @@ def load_cache() -> dict:
             "tools": {},
         }
 
-    return json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+    try:
+        content = CACHE_FILE.read_text(encoding="utf-8").strip()
+        if not content:
+            raise ValueError("Empty cache file")
+
+        return json.loads(content)
+
+    except Exception:
+        # Corrupted or partially written file
+        return {
+            "schema": 1,
+            "ttl_seconds": DEFAULT_TTL,
+            "tools": {},
+        }
 
 
 def save_cache(cache: dict) -> None:
     """
-    Persist the version cache to disk.
+    Persist the version cache to disk atomically.
 
-    The cache directory is created if it does not already exist.
+    Writes to a temporary file first, then replaces the original file
+    to avoid partial-write corruption during concurrent access.
     """
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    CACHE_FILE.write_text(
+
+    tmp_file = CACHE_FILE.with_suffix(".tmp")
+
+    tmp_file.write_text(
         json.dumps(cache, indent=2),
         encoding="utf-8",
     )
+
+    tmp_file.replace(CACHE_FILE)
 
 
 def is_fresh(entry: dict, ttl: int) -> bool:
@@ -115,30 +136,33 @@ def get_cached_versions(
     Otherwise, the provided resolver callables are invoked to re-resolve
     versions, and the cache is updated accordingly.
     """
-    cache = load_cache()
-    ttl = cache.get("ttl_seconds", DEFAULT_TTL)
-    tools = cache.setdefault("tools", {})
 
-    entry = tools.get(image)
+    with _CACHE_LOCK:
 
-    # Use cache only if entry is fresh and values are valid
-    if (
-        entry
-        and is_fresh(entry, ttl)
-        and is_valid(entry.get("installed"))
-        and is_valid(entry.get("latest"))
-    ):
-        return entry["installed"], entry["latest"]
+        cache = load_cache()
+        ttl = cache.get("ttl_seconds", DEFAULT_TTL)
+        tools = cache.setdefault("tools", {})
 
-    # Re-resolve versions
-    installed = resolve_installed(image)
-    latest = resolve_latest(image)
+        entry = tools.get(image)
 
-    tools[image] = {
-        "installed": installed,
-        "latest": latest,
-        "checked_at": datetime.now(timezone.utc).isoformat(),
-    }
+        # Use cache only if entry is fresh and values are valid
+        if (
+            entry
+            and is_fresh(entry, ttl)
+            and is_valid(entry.get("installed"))
+            and is_valid(entry.get("latest"))
+        ):
+            return entry["installed"], entry["latest"]
 
-    save_cache(cache)
-    return installed, latest
+        # Re-resolve versions
+        installed = resolve_installed(image)
+        latest = resolve_latest(image)
+
+        tools[image] = {
+            "installed": installed,
+            "latest": latest,
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        save_cache(cache)
+        return installed, latest

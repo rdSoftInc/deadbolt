@@ -50,12 +50,13 @@ from main.tools.paramspider.parser import parse_paramspider
 from main.tools.graphql_cop.runner import run_graphql_cop
 from main.tools.graphql_cop.parser import parse_graphql_cop
 
+from main.tools.linkfinder.runner import run_linkfinder
+from main.tools.linkfinder.parser import parse_linkfinder
 
 # ──────────────── Vulnerability ────────────────
 
 from main.tools.nuclei.runner import run_nuclei
 from main.tools.nuclei.parser import parse_nuclei
-
 
 # ──────────────── Helpers ────────────────
 
@@ -139,6 +140,12 @@ TOOL_RUNTIMES = {
         output_name="graphql_cop.txt",
     ),
 
+    "linkfinder": ToolRuntime(
+        runner=run_linkfinder,
+        parser=parse_linkfinder,
+        output_name="linkfinder.json",
+    ),
+
     # ---------------- Enrichment ----------------
 
     "httpx_paths": ToolRuntime(
@@ -156,4 +163,5 @@ TOOL_RUNTIMES = {
         parser=parse_nuclei,
         output_name="nuclei.jsonl",
     ),
+
 }

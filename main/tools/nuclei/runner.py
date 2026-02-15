@@ -40,6 +40,11 @@ def run_nuclei(targets: Path, output: Path, min_severity: str = "medium"):
             "-l", "/targets.txt",
             "-jsonl",
             "-severity", min_severity,
+            "-c", "50",
+            "-rate-limit", "150",
+            "-timeout", "5",
+            "-retries", "0",
+            "-disable-update-check",
             "-o", "/output/nuclei.jsonl",
         ],
         mounts={

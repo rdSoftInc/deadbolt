@@ -2,140 +2,359 @@
 #
 # -----------------------------------------------------------------------------
 # @file parser.py
-# @brief jadx output parser for Android static analysis.
+# @brief jadx output parser for Android static code analysis.
 #
-# This module parses structured output produced by jadx analysis and
-# normalizes extracted URLs and potential secrets into Deadbolt Finding
-# objects. Results are filtered to reduce framework noise and false
-# positives.
+# This module parses structured JSON output produced by jadx and normalizes
+# extracted code-level artifacts and security findings into Deadbolt
+# Finding objects.
+#
+# Detects:
+# - Hardcoded external URLs (attack surface exposure)
+# - Dangerous API usage patterns (injection, RCE, deserialization, WebView abuse)
+# - Embedded cryptographic materials (private keys, certificates)
+# - Hardcoded credentials (JWT, AWS keys, Firebase endpoints)
+# - Potential hardcoded secrets
+# - Manifest configuration flags (debuggable, backup enabled)
 #
 # Author: Rolstan Robert D'souza
 # Date: 2026
 # -----------------------------------------------------------------------------
 
+import json
+import re
 from pathlib import Path
 from datetime import datetime, timezone
-import json
-from typing import List
+from typing import List, Tuple, Dict
 
 from main.schema.normalize import Finding
 
 
-# Android framework namespace prefixes to ignore
+# -----------------------------------------------------------------------------
+# Constants
+# -----------------------------------------------------------------------------
+
+# Android namespace URLs that should not be treated as external endpoints
 ANDROID_NAMESPACE_PREFIXES = (
     "http://schemas.android.com",
 )
 
-# Keywords commonly associated with secrets or credentials
+# Keywords commonly associated with secrets or credential exposure
 SECRET_KEYWORDS = (
-    "api_key",
-    "apikey",
-    "secret",
-    "token",
-    "access_key",
-    "auth",
-    "password",
+    "api_key", "apikey", "secret", "password",
+    "passwd", "pwd", "token", "access_token",
+    "refresh_token", "auth", "bearer",
+    "private_key", "encryption_key",
+    "aws_secret", "aws_access_key",
+    "firebase", "service_account",
+    "connection_string", "jdbc",
 )
 
+
+# -----------------------------------------------------------------------------
+# Precompiled Pattern Definitions
+# -----------------------------------------------------------------------------
+
+CRYPTO_PATTERNS = {
+    "rsa_private": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    "certificate": re.compile(r"-----BEGIN CERTIFICATE-----"),
+}
+
+DANGEROUS_API_PATTERNS = {
+    "sql_concat": re.compile(r"rawQuery\s*\(.*\+|execSQL\s*\(.*\+", re.I | re.S),
+    "runtime_exec": re.compile(r"Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec", re.I),
+    "process_builder": re.compile(r"ProcessBuilder\s*\(", re.I),
+    "unsafe_deserialization": re.compile(r"ObjectInputStream|readObject\s*\(", re.I),
+    "webview_js": re.compile(r"addJavascriptInterface|loadUrl\s*\(\s*['\"]javascript:", re.I),
+}
+
+CREDENTIAL_PATTERNS = {
+    "jwt_token": re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"),
+    "aws_access_key": re.compile(r"AKIA[0-9A-Z]{16}"),
+    "firebase_url": re.compile(r"https://[a-z0-9-]+\.firebaseio\.com"),
+}
+
+
+# -----------------------------------------------------------------------------
+# Helper Functions
+# -----------------------------------------------------------------------------
 
 def _is_real_url(u: str) -> bool:
     """
     Determine whether a string represents a meaningful external URL.
 
-    Filters out Android framework namespaces and non-HTTP(S) values.
+    Conditions:
+    - Must be HTTP or HTTPS
+    - Must not belong to Android XML namespace
+    - Must not reference localhost or loopback
     """
-    if not (u.startswith("http://") or u.startswith("https://")):
+
+    if not isinstance(u, str):
         return False
 
-    for prefix in ANDROID_NAMESPACE_PREFIXES:
-        if u.startswith(prefix):
-            return False
+    if not u.startswith(("http://", "https://")):
+        return False
+
+    if any(u.startswith(p) for p in ANDROID_NAMESPACE_PREFIXES):
+        return False
+
+    if "localhost" in u or "127.0.0.1" in u:
+        return False
 
     return True
+
+
+def _detect_crypto_key(s: str) -> Tuple[bool, str]:
+    """
+    Detect embedded cryptographic material.
+
+    Returns:
+        (True, key_type) if detected
+        (False, "") otherwise
+    """
+
+    for key_type, pattern in CRYPTO_PATTERNS.items():
+        if pattern.search(s):
+            return True, key_type
+
+    return False, ""
+
+
+def _detect_dangerous_api(s: str) -> Tuple[bool, str]:
+    """
+    Detect dangerous API usage patterns.
+
+    Examples:
+    - SQL injection via string concatenation
+    - Runtime command execution
+    - Unsafe deserialization
+    - WebView JavaScript injection
+    """
+
+    for api_type, pattern in DANGEROUS_API_PATTERNS.items():
+        if pattern.search(s):
+            return True, api_type
+
+    return False, ""
+
+
+def _detect_sensitive_credential(s: str) -> Tuple[bool, str]:
+    """
+    Detect known credential formats.
+
+    Examples:
+    - JWT tokens
+    - AWS access keys
+    - Firebase database URLs
+    """
+
+    for cred_type, pattern in CREDENTIAL_PATTERNS.items():
+        if pattern.search(s):
+            return True, cred_type
+
+    return False, ""
 
 
 def _looks_like_secret(s: str) -> bool:
     """
-    Heuristically determine whether a string resembles a hardcoded secret.
+    Heuristic detection for potential hardcoded secrets.
 
-    The check is intentionally conservative to reduce false positives.
+    Filters:
+    - Length must be reasonable
+    - Excludes Android/Kotlin identifiers
+    - Excludes structured XML/JSON content
     """
+
+    if not isinstance(s, str):
+        return False
+
+    if len(s) < 6 or len(s) > 4096:
+        return False
+
     s_low = s.lower()
 
-    # Must contain a secret-related keyword
-    if not any(k in s_low for k in SECRET_KEYWORDS):
+    if s_low.startswith(("kotlin.", "android.", "androidx.")):
         return False
 
-    # Avoid extremely short or meaningless values
-    if len(s) < 8:
+    if s_low.startswith(("<", "{", "[")):
         return False
 
-    # Exclude obvious framework noise
-    if s_low.startswith("kotlin.") or s_low.startswith("android."):
-        return False
+    return any(k in s_low for k in SECRET_KEYWORDS)
 
-    return True
 
+# -----------------------------------------------------------------------------
+# Main Parser
+# -----------------------------------------------------------------------------
 
 def parse_jadx(raw_file: Path) -> List[Finding]:
     """
-    Parse jadx JSON output into normalized findings.
+    Parse jadx JSON output into normalized Deadbolt findings.
 
-    The parser extracts:
-    1. Hardcoded URLs → attack surface assets
-    2. Potential secrets or tokens → high-severity findings
+    Emits:
+    - kind="asset" for hardcoded external URLs
+    - kind="finding" for:
+        - Dangerous API usage
+        - Embedded cryptographic materials
+        - Hardcoded credentials
+        - Potential secrets
+        - Manifest misconfigurations
 
-    Filters are applied to reduce framework artifacts and false positives.
+    Findings are deduplicated using structured keys to ensure
+    deterministic and resume-stable output ordering.
     """
-    findings: List[Finding] = []
+
+    findings: Dict[str, Finding] = {}
     timestamp = datetime.now(timezone.utc)
 
     data = json.loads(raw_file.read_text(encoding="utf-8"))
 
-    # --------------------------------------------------
-    # 1. URLs → attack surface
-    # --------------------------------------------------
-    for url in set(filter(_is_real_url, data.get("urls", []))):
-        findings.append(
-            Finding(
-                asset=url,
-                title="Hardcoded URL in Android APK",
-                tool="jadx",
-                kind="asset",
+    # ------------------------------------------------------------------
+    # 1. Hardcoded External URLs (Attack Surface)
+    # ------------------------------------------------------------------
 
-                timestamp=timestamp,
-                evidence_path=str(raw_file),
+    for url in sorted(set(filter(_is_real_url, data.get("urls", [])))):
 
-                metadata={
-                    "source": "jadx",
-                    "type": "url",
-                },
-            )
+        findings[f"url:{url}"] = Finding(
+            asset=url,
+            title="Hardcoded external URL in APK",
+            tool="jadx",
+            kind="asset",
+            timestamp=timestamp,
+            evidence_path=str(raw_file),
+            metadata={
+                "source": "jadx",
+                "category": "url",
+            },
         )
 
-    # --------------------------------------------------
-    # 2. Secrets / tokens → vulnerabilities
-    # --------------------------------------------------
-    for s in set(filter(_looks_like_secret, data.get("strings", []))):
-        findings.append(
-            Finding(
-                asset=s,
-                title="Potential hardcoded secret in Android APK",
+    # ------------------------------------------------------------------
+    # 2. String-Based Static Analysis
+    # ------------------------------------------------------------------
+
+    for s in sorted(set(data.get("strings", []))):
+
+        if not isinstance(s, str):
+            continue
+
+        # Dangerous API usage
+        is_dangerous, api_type = _detect_dangerous_api(s)
+        if is_dangerous:
+            key = f"api:{api_type}:{s[:100]}"
+            findings[key] = Finding(
+                asset=s[:200],
+                title=f"Dangerous API usage detected ({api_type})",
                 tool="jadx",
                 kind="finding",
-
                 severity="high",
                 occurrences=1,
-
                 timestamp=timestamp,
                 evidence_path=str(raw_file),
-
                 metadata={
                     "source": "jadx",
-                    "confidence": "medium",
-                    "category": "secret",
+                    "category": "api_misuse",
+                    "api_type": api_type,
                 },
             )
+            continue
+
+        # Secret heuristics
+        if not _looks_like_secret(s):
+            continue
+
+        # Cryptographic material
+        is_crypto, crypto_type = _detect_crypto_key(s)
+        if is_crypto:
+            key = f"crypto:{crypto_type}:{s[:100]}"
+            findings[key] = Finding(
+                asset=s[:200],
+                title=f"Embedded cryptographic material ({crypto_type})",
+                tool="jadx",
+                kind="finding",
+                severity="critical",
+                occurrences=1,
+                timestamp=timestamp,
+                evidence_path=str(raw_file),
+                metadata={
+                    "source": "jadx",
+                    "category": "cryptographic_key",
+                },
+            )
+            continue
+
+        # Known credential formats
+        is_sensitive, cred_type = _detect_sensitive_credential(s)
+        if is_sensitive:
+            key = f"cred:{cred_type}:{s[:100]}"
+            findings[key] = Finding(
+                asset=s[:200],
+                title=f"Hardcoded credential detected ({cred_type})",
+                tool="jadx",
+                kind="finding",
+                severity="critical",
+                occurrences=1,
+                timestamp=timestamp,
+                evidence_path=str(raw_file),
+                metadata={
+                    "source": "jadx",
+                    "category": "hardcoded_credential",
+                    "credential_type": cred_type,
+                },
+            )
+            continue
+
+        # Generic secret
+        key = f"secret:{s[:100]}"
+        findings[key] = Finding(
+            asset=s[:200],
+            title="Potential hardcoded secret in APK",
+            tool="jadx",
+            kind="finding",
+            severity="high",
+            occurrences=1,
+            timestamp=timestamp,
+            evidence_path=str(raw_file),
+            metadata={
+                "source": "jadx",
+                "category": "secret",
+            },
         )
 
-    return findings
+    # ------------------------------------------------------------------
+    # 3. Manifest Configuration Cross-Check
+    # ------------------------------------------------------------------
+
+    manifest = data.get("manifest", {})
+
+    if manifest.get("debuggable"):
+        findings["manifest:debuggable"] = Finding(
+            asset="Android APK",
+            title="Debuggable configuration detected",
+            tool="jadx",
+            kind="finding",
+            severity="high",
+            occurrences=1,
+            timestamp=timestamp,
+            evidence_path=str(raw_file),
+            metadata={
+                "source": "jadx",
+                "category": "insecure_config",
+            },
+        )
+
+    if manifest.get("allow_backup"):
+        findings["manifest:backup"] = Finding(
+            asset="Android APK",
+            title="Backup enabled in manifest",
+            tool="jadx",
+            kind="finding",
+            severity="medium",
+            occurrences=1,
+            timestamp=timestamp,
+            evidence_path=str(raw_file),
+            metadata={
+                "source": "jadx",
+                "category": "insecure_config",
+            },
+        )
+
+    # Deterministic ordering for resume stability
+    return sorted(findings.values(), key=lambda f: f.asset)

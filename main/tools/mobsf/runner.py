@@ -139,16 +139,18 @@ def _wait_for_api_ready(api_key: str) -> None:
 # Main scan logic
 # -------------------------
 
-def run_mobsf(apk: Path, output: Path) -> None:
+def run_mobsf(prod_pack: Path, output: Path) -> None:
     """
-    Execute a MobSF static analysis scan against an Android APK.
+    Execute a MobSF static analysis scan against an Android APK or iOS IPA.
 
     Consumes:
       - apk (Android application package)
+      - ipa (iOS application package)
 
     Produces:
       - JSON report containing static analysis results
     """
+
     log("Starting MobSF")
 
     cid = _start_container()
@@ -162,17 +164,26 @@ def run_mobsf(apk: Path, output: Path) -> None:
 
     headers = {"X-Mobsf-Api-Key": api_key}
 
-    # Upload APK
-    log(f"Uploading APK: {apk} ({apk.stat().st_size} bytes)")
-    with apk.open("rb") as f:
+    if prod_pack.suffix.lower() == ".apk":
+        mime = "application/vnd.android.package-archive"
+    elif prod_pack.suffix.lower() == ".ipa":
+        mime = "application/octet-stream"
+    else:
+        raise RuntimeError("MobSF supports only .apk and .ipa files")
+    
+    log(f"Detected platform: {'Android' if prod_pack.suffix == '.apk' else 'iOS'}")
+
+    # Upload file and trigger scan
+    log(f"Uploading prod_pack: {prod_pack} ({prod_pack.stat().st_size} bytes)")
+    with prod_pack.open("rb") as f:
         r = requests.post(
             "http://127.0.0.1:8000/api/v1/upload",
             headers=headers,
             files={
                 "file": (
-                    apk.name,
+                    prod_pack.name,
                     f,
-                    "application/vnd.android.package-archive",
+                    mime,
                 )
             },
             timeout=120,

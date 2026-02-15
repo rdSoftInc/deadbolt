@@ -134,7 +134,7 @@ def ios(
     domain runner, which is responsible for extraction and inspection logic.
     """
     run_ios(
-        ios_path=ipa,
+        ipa_path=ipa,
         output_dir=output,
     )
 

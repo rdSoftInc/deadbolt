@@ -20,7 +20,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from main.core.severity import severity_at_least
 
 # Default minimum severity required for gated findings to appear in the report
-DEFAULT_MIN_SEVERITY = "low"
+DEFAULT_MIN_SEVERITY = "medium"
 
 
 def load_tool_registry(domain: str):

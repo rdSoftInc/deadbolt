@@ -64,6 +64,7 @@ class ToolSpec:
 # - ToolSpec represents intent, not binaries
 # - The same binary may appear multiple times with different roles
 # - Tool names must match runtime registry keys
+# - All tools produce paths that are consumed by httpx_paths before Nuclei
 # ---------------------------------------------------------------------
 
 TOOL_REGISTRY: Dict[str, ToolSpec] = {
@@ -164,6 +165,17 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
         produces_severity=False,
         severity_gated=False,
         parallel=True,
+    ),
+
+    "linkfinder": ToolSpec(
+        name="linkfinder",
+        image="deadbolt-linkfinder",
+        phase="enumeration",
+        consumes="paths",
+        produces="paths",
+        produces_severity=False,
+        severity_gated=False,
+        parallel=False,
     ),
 
     # httpx — path validation / enrichment

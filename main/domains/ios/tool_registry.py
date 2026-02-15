@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from typing import Dict, Literal
 
 # Types describing tool input/output and execution phases
-AssetType = Literal["ipa", "assets", "findings"]
-PhaseType = Literal["static", "analysis"]
+AssetType = Literal["ipa", "classes", "findings"]
+PhaseType = Literal["static", "extraction", "analysis"]
 
 
 @dataclass(frozen=True)
@@ -58,15 +58,19 @@ class ToolSpec:
 # Declarative registry of iOS analysis tools
 TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
+    # ─────────────────────────────
+    # Static Analysis
+    # ─────────────────────────────
+
     "mobsf": ToolSpec(
         name="mobsf",
         image="opensecurity/mobile-security-framework-mobsf",
-        phase="analysis",
+        phase="static",
         consumes="ipa",
         produces="findings",
         produces_severity=True,
         severity_gated=False,
         parallel=False,
-    ),
+    )
 
 }

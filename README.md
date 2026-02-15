@@ -12,7 +12,20 @@ Deadbolt is built for **controlled, auditable reconnaissance and security assess
 
 ![Deadbolt execution table](images/run-table.png)
 
-![Deadbolt mobile execution table](images/mobile-run-table.png)
+![Deadbolt android execution table](images/run-table-android.png)
+
+![Deadbolt ios execution table](images/run-table-ios.png)
+
+![Deadbolt web report](images/report-web-metadata.png)
+
+![Deadbolt web report](images/report-web-findings.png)
+
+![Deadbolt android report](images/report-android-metadata.png)
+
+![Deadbolt android report](images/report-android-findings.png)
+
+![Deadbolt android eport](images/report-android-findings-more.png)
+
 
 ## What Deadbolt is (and isn’t)
 
@@ -89,6 +102,7 @@ Each tool:
 - **waybackurls** – archive-based endpoint recovery  
 - **katana** – crawler-based surface expansion  
 - **hakrawler** – HTML link extraction  
+- **linkfinder** – endpoint discovery in JavaScript files
 - **ffuf** – endpoint discovery via fuzzing  
 - **httpx (paths mode)** – path validation & enrichment  
 

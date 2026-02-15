@@ -21,6 +21,19 @@ from main.tools.mobsf.runner import run_mobsf
 from main.tools.mobsf.parser import parse_mobsf
 
 
+# ──────────────── Helpers ────────────────
+
+def _mark_classes(findings):
+    """
+    Mark parsed class-dump findings as class artifacts.
+
+    This helper is used by class-dump to ensure findings are properly
+    classified for downstream analysis.
+    """
+    for f in findings:
+        f.kind = "class"
+
+
 # ──────────────── Runtime Registry ────────────────
 
 # Declarative mapping of tool names to their execution runtime definitions
@@ -30,6 +43,6 @@ TOOL_RUNTIMES = {
         runner=run_mobsf,
         parser=parse_mobsf,
         output_name="mobsf.json",
-    ),
+    )
 
 }
