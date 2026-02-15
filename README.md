@@ -162,6 +162,7 @@ docker build -t deadbolt-gau docker/gau
 docker build -t deadbolt-waybackurls docker/waybackurls
 docker build -t deadbolt-katana docker/katana
 docker build -t deadbolt-hakrawler docker/hakrawler
+docker build -t deadbolt-linkfinder docker/linkfinder
 docker build -t deadbolt-ffuf docker/ffuf
 docker build -t deadbolt-paramspider docker/paramspider
 docker build -t deadbolt-graphql-cop docker/graphql-cop
