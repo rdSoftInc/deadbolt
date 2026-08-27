@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nmaprun scanner="nmap" args="nmap -sV -O 10.20.30.4" start="1786980000" version="7.991" xmloutputversion="1.05">
+  <host starttime="1786980001" endtime="1786980010">
+    <status state="up" reason="syn-ack" reason_ttl="64"/>
+    <address addr="10.20.30.4" addrtype="ipv4"/>
+    <address addr="00:11:22:33:44:55" addrtype="mac" vendor="Example Networks"/>
+    <hostnames><hostname name="server.internal.example" type="PTR"/></hostnames>
+    <ports>
+      <port protocol="tcp" portid="22">
+        <state state="open" reason="syn-ack" reason_ttl="64"/>
+        <service name="ssh" product="OpenSSH" version="9.6" extrainfo="Ubuntu Linux" method="probed" conf="10"><cpe>cpe:/a:openbsd:openssh:9.6</cpe></service>
+      </port>
+      <port protocol="tcp" portid="23">
+        <state state="open" reason="syn-ack" reason_ttl="64"/>
+        <service name="telnet" product="Linux telnetd" method="probed" conf="10"/>
+        <script id="example-vuln" output="VULNERABLE: controlled fixture evidence"/>
+      </port>
+      <port protocol="udp" portid="161">
+        <state state="open|filtered" reason="no-response" reason_ttl="0"/>
+        <service name="snmp" method="table" conf="3"/>
+      </port>
+    </ports>
+    <os><osmatch name="Linux 5.X" accuracy="96"><osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="5.X" accuracy="96"><cpe>cpe:/o:linux:linux_kernel:5</cpe></osclass></osmatch></os>
+    <uptime seconds="86400" lastboot="2026-08-16 22:00:00"/>
+    <distance value="1"/>
+  </host>
+  <runstats><finished time="1786980011" timestr="Mon Aug 17 22:10:11 2026" elapsed="10.00" summary="Nmap done" exit="success"/><hosts up="1" down="0" total="1"/></runstats>
+</nmaprun>

@@ -25,6 +25,8 @@ import subprocess
 import re
 from typing import Set, Tuple
 
+from main.core.tool_manifest import get_tool_config
+
 
 # File types considered for static string analysis
 TEXT_EXTENSIONS = {
@@ -87,17 +89,17 @@ def _extract_manifest_data(manifest_path: Path) -> dict:
         "debuggable": False,
         "allow_backup": False,
     }
-    
+
     try:
         content = manifest_path.read_text(errors="ignore")
     except Exception:
         return manifest_data
-    
+
     perm_pattern = re.compile(r'<uses-permission\s+android:name="([^"]+)"')
     manifest_data["permissions"] = perm_pattern.findall(content)
     manifest_data["debuggable"] = 'android:debuggable="true"' in content
     manifest_data["allow_backup"] = 'android:allowBackup="true"' in content
-    
+
     return manifest_data
 
 
@@ -130,7 +132,7 @@ def run_jadx(apk: Path, output: Path):
             "docker", "run", "--rm",
             "-v", f"{apk.resolve()}:/input.apk",
             "-v", f"{out_dir.resolve()}:/out",
-            "deadbolt-jadx",
+            get_tool_config("jadx").image,
             "-d", "/out",
             "/input.apk",
         ],
@@ -175,7 +177,7 @@ def run_jadx(apk: Path, output: Path):
 
         # Extract URLs
         findings["urls"].update(_extract_urls(content))
-        
+
         # Extract secrets using pattern matching
         findings["strings"].update(_extract_secrets(content))
 

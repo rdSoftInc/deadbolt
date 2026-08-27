@@ -36,6 +36,71 @@ def load_scope(scope_file: Path) -> dict:
         return yaml.safe_load(f)
 
 
+def target_host(target: str) -> str | None:
+    """Extract a normalized host from a URL, bare host, or host/path value."""
+
+    value = target.strip().split(" :: ", 1)[0]
+    if not value or value.startswith("/"):
+        return None
+    parsed = urlparse(value if "://" in value else f"//{value}")
+    return parsed.hostname.lower().rstrip(".") if parsed.hostname else None
+
+
+def host_in_scope(host: str, scope: dict) -> bool:
+    """Apply fail-closed exact or explicit wildcard rules to one hostname."""
+
+    allowed = {str(item).lower().rstrip(".") for item in scope.get("allow", [])}
+    denied = {str(item).lower().rstrip(".") for item in scope.get("deny", [])}
+    normalized = host.lower().rstrip(".")
+
+    return bool(allowed) and not any(
+        _host_matches_pattern(normalized, pattern) for pattern in denied
+    ) and any(_host_matches_pattern(normalized, pattern) for pattern in allowed)
+
+
+def classify_target_scope(target: str, scope: dict) -> str:
+    """Classify evidence without treating an unlisted host as authorized.
+
+    ``unknown`` is intentionally distinct from an explicit deny. Both remain
+    ineligible for active scanning; the distinction is for analyst review.
+    """
+
+    host = target_host(target)
+    if not host:
+        return "unknown"
+    normalized = host.lower().rstrip(".")
+    denied = {str(item).lower().rstrip(".") for item in scope.get("deny", [])}
+    allowed = {str(item).lower().rstrip(".") for item in scope.get("allow", [])}
+    if any(_host_matches_pattern(normalized, pattern) for pattern in denied):
+        return "out_of_scope"
+    if any(_host_matches_pattern(normalized, pattern) for pattern in allowed):
+        return "in_scope"
+    return "unknown"
+
+
+def _host_matches_pattern(host: str, pattern: str) -> bool:
+    """Match normalized hosts using Deadbolt's explicit wildcard semantics."""
+
+    if pattern.startswith("*."):
+        suffix = pattern[1:]
+        return host.endswith(suffix) and host != pattern[2:]
+    return host == pattern
+
+
+def filter_in_scope(items: list[str], scope: dict) -> tuple[list[str], list[str]]:
+    """Partition absolute targets into permitted and rejected values."""
+
+    accepted = []
+    rejected = []
+    for item in items:
+        host = target_host(item)
+        if host and host_in_scope(host, scope):
+            accepted.append(item)
+        else:
+            rejected.append(item)
+    return accepted, rejected
+
+
 def validate_targets(targets_file: Path, scope_file: Path):
     """
     Validate scan targets against a defined scope.
@@ -45,10 +110,13 @@ def validate_targets(targets_file: Path, scope_file: Path):
     ScopeError to provide clear feedback to the user.
     """
     scope = load_scope(scope_file)
-    allowed = set(scope.get("allow", []))
-    denied = set(scope.get("deny", []))
-
     violations = []
+    allowed = {str(item).lower().rstrip(".") for item in scope.get("allow", [])}
+    denied = {str(item).lower().rstrip(".") for item in scope.get("deny", [])}
+    if not allowed:
+        raise ScopeError(
+            "Scope violation:\nscope allow list is empty; explicit authorization is required"
+        )
 
     with targets_file.open() as f:
         for line in f:
@@ -56,14 +124,14 @@ def validate_targets(targets_file: Path, scope_file: Path):
             if not target:
                 continue
 
-            host = urlparse(target).hostname
+            host = target_host(target)
             if not host:
+                violations.append(f"cannot determine host for {target!r}")
                 continue
 
-            if host in denied:
+            if any(_host_matches_pattern(host, pattern) for pattern in denied):
                 violations.append(f"{host} is explicitly denied")
-
-            if allowed and host not in allowed:
+            elif not any(_host_matches_pattern(host, pattern) for pattern in allowed):
                 violations.append(f"{host} is not in allow list")
 
     if violations:

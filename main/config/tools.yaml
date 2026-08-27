@@ -1,0 +1,243 @@
+schema: 1
+
+tools:
+  nmap:
+    domains: [network]
+    image: deadbolt-nmap
+    dockerfile: docker/nmap/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: nmap
+    repository: nmap/nmap
+    version: "7.991"
+    version_type: release
+    version_args: [[--version], [-V]]
+
+  subfinder:
+    domains: [web]
+    image: deadbolt-subfinder
+    dockerfile: docker/subfinder/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/subfinder
+    version: 2.15.0
+    version_type: release
+    version_args: [[-version], [--version], [version]]
+
+  dnsx:
+    domains: [web]
+    image: deadbolt-dnsx
+    dockerfile: docker/dnsx/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/dnsx
+    version: 1.3.0
+    version_type: release
+    version_detection: image_label
+    version_args: [[-version], [--version], [version]]
+
+  naabu:
+    domains: [web]
+    image: deadbolt-naabu
+    dockerfile: docker/naabu/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/naabu
+    version: 2.6.1
+    version_type: release
+    version_args: [[-version], [--version], [version]]
+
+  tlsx:
+    domains: [web]
+    image: deadbolt-tlsx
+    dockerfile: docker/tlsx/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/tlsx
+    version: 1.3.0
+    version_type: release
+    version_detection: image_label
+    version_args: [[-version], [--version], [version]]
+
+  arjun:
+    domains: [web]
+    image: deadbolt-arjun
+    dockerfile: docker/arjun/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: s0md3v/Arjun
+    version: 2.2.7
+    version_type: release
+    version_detection: image_label
+    version_args: [[--version], [-version]]
+
+  httpx:
+    domains: [web]
+    image: deadbolt-httpx
+    dockerfile: docker/httpx/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/httpx
+    version: 1.10.0
+    version_type: release
+    version_args: [[-version], [--version], [version]]
+
+  gau:
+    domains: [web]
+    image: deadbolt-gau
+    dockerfile: docker/gau/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: lc/gau
+    version: 2.2.4
+    version_type: release
+    version_args: [[--version], [-version], [version]]
+
+  waybackurls:
+    domains: [web]
+    image: deadbolt-waybackurls
+    dockerfile: docker/waybackurls/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: tomnomnom/waybackurls
+    version: 0.1.0
+    version_type: release
+    version_detection: image_label
+
+  katana:
+    domains: [web]
+    image: deadbolt-katana
+    dockerfile: docker/katana/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/katana
+    version: 1.7.0
+    version_type: release
+    version_args: [[-version], [--version], [version]]
+
+  hakrawler:
+    domains: [web]
+    image: deadbolt-hakrawler
+    dockerfile: docker/hakrawler/Dockerfile
+    build_arg: TOOL_COMMIT
+    managed: true
+    source: github
+    repository: hakluke/hakrawler
+    version: 52a16fe61bd18b8f431b9d66058cba12e96e4451
+    version_type: commit
+    version_detection: image_label
+
+  ffuf:
+    domains: [web]
+    image: deadbolt-ffuf
+    dockerfile: docker/ffuf/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: ffuf/ffuf
+    version: 2.2.1
+    version_type: release
+    version_args: [[-V], [--version], [version]]
+
+  linkfinder:
+    domains: [web]
+    image: deadbolt-linkfinder
+    dockerfile: docker/linkfinder/Dockerfile
+    build_arg: TOOL_COMMIT
+    managed: true
+    source: github
+    repository: GerbenJavado/LinkFinder
+    version: 1debac5dace4724fd6187c06f133578dae51c86f
+    version_type: commit
+    version_detection: image_label
+
+  paramspider:
+    domains: [web]
+    image: deadbolt-paramspider
+    dockerfile: docker/paramspider/Dockerfile
+    build_arg: TOOL_COMMIT
+    managed: true
+    source: github
+    repository: devanshbatham/ParamSpider
+    version: c44bdaae54789b237028e309b603d1aa5ad52e5e
+    version_type: commit
+    version_detection: image_label
+
+  graphql-cop:
+    domains: [web]
+    image: deadbolt-graphql-cop
+    dockerfile: docker/graphql-cop/Dockerfile
+    build_arg: TOOL_COMMIT
+    managed: true
+    source: github
+    repository: dolevf/graphql-cop
+    version: 2b7e086efae672f28b419c7fcdfe6b48d846c9dc
+    version_type: commit
+    version_detection: image_label
+
+  nuclei:
+    domains: [web]
+    image: deadbolt-nuclei
+    dockerfile: docker/nuclei/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: projectdiscovery/nuclei
+    version: 3.11.1
+    version_type: release
+    version_args: [[-version], [--version], [version]]
+
+  apktool:
+    domains: [android]
+    image: deadbolt-apktool
+    dockerfile: docker/apktool/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: iBotPeaches/Apktool
+    version: 3.0.3
+    version_type: release
+    version_detection: image_label
+
+  jadx:
+    domains: [android]
+    image: deadbolt-jadx
+    dockerfile: docker/jadx/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: skylot/jadx
+    version: 1.5.6
+    version_type: release
+    version_args: [[--version], [-version], [version]]
+
+  androguard:
+    domains: [android]
+    image: deadbolt-androguard
+    dockerfile: docker/androguard/Dockerfile
+    build_arg: TOOL_VERSION
+    managed: true
+    source: github
+    repository: androguard/androguard
+    version: 4.1.4
+    version_type: release
+    version_args: [[--version], [-version], [version]]
+
+  mobsf:
+    domains: [android, ios]
+    image: opensecurity/mobile-security-framework-mobsf:v4.5.2
+    managed: false
+    source: github
+    repository: MobSF/Mobile-Security-Framework-MobSF
+    version: 4.5.2
+    version_type: release
+    version_detection: configured

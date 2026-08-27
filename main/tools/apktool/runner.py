@@ -30,6 +30,8 @@ import subprocess
 import tempfile
 import shutil
 
+from main.core.tool_manifest import get_tool_config
+
 
 def run_apktool(apk: Path, output: Path) -> None:
     """
@@ -67,7 +69,7 @@ def run_apktool(apk: Path, output: Path) -> None:
                 "docker", "run", "--rm",
                 "-v", f"{apk.resolve()}:/input.apk",
                 "-v", f"{tmp_dir.resolve()}:/out",
-                "deadbolt-apktool",
+                get_tool_config("apktool").image,
                 "d", "/input.apk",
                 "-o", "/out",
                 "-f",

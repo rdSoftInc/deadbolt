@@ -44,3 +44,7 @@ class ToolRuntime:
 
     # Optional subdirectory where raw output is written
     raw_subdir: Optional[str] = None
+
+    # Increment when arguments or parsing semantics change. Resume caching
+    # includes this value so stale artifacts are never silently reused.
+    revision: int = 1

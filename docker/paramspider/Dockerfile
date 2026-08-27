@@ -25,7 +25,11 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Clone the ParamSpider repository
-RUN git clone https://github.com/devanshbatham/paramspider
+ARG TOOL_COMMIT
+LABEL io.deadbolt.tool.version="${TOOL_COMMIT}"
+RUN git clone https://github.com/devanshbatham/paramspider \
+ && cd paramspider \
+ && git checkout "${TOOL_COMMIT}"
 
 # Change the working directory to the cloned repository
 WORKDIR /app/paramspider

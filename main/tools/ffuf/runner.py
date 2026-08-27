@@ -19,6 +19,7 @@
 # -----------------------------------------------------------------------------
 
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 from main.execution.docker import run_container
 from main.tools.ffuf.constants import (
     FFUF_IMAGE,
@@ -26,9 +27,10 @@ from main.tools.ffuf.constants import (
     FFUF_WORDLIST_CONTAINER_PATH,
     FFUF_OUTPUT_NAME,
 )
+from main.domains.web.profiles import WebScanProfile, capped_rate, policy_for
 
 
-def run_ffuf(targets: Path, output: Path) -> None:
+def run_ffuf(targets: Path, output: Path, *, profile: WebScanProfile | str = WebScanProfile.STANDARD, rate_limit: float | None = None) -> None:
     """
     Execute ffuf for endpoint discovery.
 
@@ -39,41 +41,39 @@ def run_ffuf(targets: Path, output: Path) -> None:
         - paths (JSON output containing discovered endpoints)
 
     Execution Model:
-        HOST × WORDLIST fuzzing using:
-            - /targets.txt as HOST
+        BASE URL × WORDLIST fuzzing using:
+            - /targets.txt as BASE
             - configured shallow wordlist as FUZZ
-            - https://HOST/FUZZ target template
+            - BASE/FUZZ target template
     """
 
     # -----------------------------------------------------------------
-    # Normalize target hosts (strip scheme and trailing slashes)
+    # Normalize base URLs while preserving scheme, port, and base path.
     # -----------------------------------------------------------------
 
     normalized = output.parent / "ffuf_targets.txt"
 
     raw_lines = targets.read_text(encoding="utf-8").splitlines()
-    hosts = []
+    base_urls = []
 
     for line in raw_lines:
         line = line.strip()
         if not line:
             continue
 
-        # Strip URL scheme if present
-        if line.startswith(("http://", "https://")):
-            line = line.split("://", 1)[1]
+        if not line.startswith(("http://", "https://")):
+            line = f"https://{line}"
+        parsed = urlsplit(line)
+        if not parsed.netloc:
+            continue
+        path = parsed.path.rstrip("/")
+        base_urls.append(urlunsplit((parsed.scheme, parsed.netloc, path, "", "")))
 
-        # Remove trailing slash
-        line = line.rstrip("/")
-
-        if line:
-            hosts.append(line)
-
-    if not hosts:
+    if not base_urls:
         raise RuntimeError("ffuf received empty asset list")
 
     normalized.write_text(
-        "\n".join(sorted(set(hosts))),
+        "\n".join(sorted(set(base_urls))),
         encoding="utf-8",
     )
 
@@ -91,17 +91,21 @@ def run_ffuf(targets: Path, output: Path) -> None:
     # Execute ffuf (HOST × PATH fuzzing)
     # -----------------------------------------------------------------
 
+    policy = policy_for(profile)
     run_container(
         image=FFUF_IMAGE,
         args=[
-            # Host wordlist
-            "-w", "/targets.txt:HOST",
+            # Base URL wordlist
+            "-w", "/targets.txt:BASE",
 
             # Path wordlist
             "-w", f"{FFUF_WORDLIST_CONTAINER_PATH}:FUZZ",
 
             # Target template
-            "-u", "https://HOST/FUZZ",
+            "-u", "BASE/FUZZ",
+
+            # Calibrate generic/SPA fallback responses to reduce false paths.
+            "-ac",
 
             # Match relevant status codes only
             "-mc", "200,204,301,302,307,401,403",
@@ -111,8 +115,9 @@ def run_ffuf(targets: Path, output: Path) -> None:
             "-o", f"/output/{FFUF_OUTPUT_NAME}",
 
             # Performance & stability tuning
-            "-timeout", "10",
-            "-t", "20",
+            "-timeout", str(policy.ffuf_timeout),
+            "-t", str(policy.ffuf_threads),
+            "-rate", str(capped_rate(policy.httpx_rate, rate_limit)),
 
             # Silent mode
             "-sa",

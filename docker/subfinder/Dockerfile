@@ -13,13 +13,15 @@
 # -----------------------------------------------------------------------------
 
 # Use a minimal Alpine-based Go image for small footprint and fast builds
-FROM golang:1.25-alpine
+FROM golang:1.26-alpine
+
+ARG TOOL_VERSION
 
 # Install runtime dependencies required for Go tooling and HTTPS access
 RUN apk add --no-cache ca-certificates git
 
 # Install a pinned subfinder version for deterministic builds
-RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.12.0
+RUN go install "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v${TOOL_VERSION}"
 
 # Run subfinder CLI by default when the container starts
 ENTRYPOINT ["subfinder"]

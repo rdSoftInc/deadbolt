@@ -13,6 +13,11 @@ dependencies = [
   "requests>=2.31"
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest>=8,<10",
+]
+
 [project.scripts]
 deadbolt = "main.cli.app:app"
 
@@ -20,5 +25,12 @@ deadbolt = "main.cli.app:app"
 requires = ["setuptools>=65", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["main"]
+[tool.setuptools.packages.find]
+include = ["main*"]
+
+[tool.setuptools.package-data]
+"main.report" = ["templates/*.j2"]
+"main.config" = ["*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

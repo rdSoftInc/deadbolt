@@ -18,8 +18,12 @@
 # Date: 2026
 # -----------------------------------------------------------------------------
 
+import re
+
 import requests
 from functools import lru_cache
+
+from main.core.tool_manifest import get_tool_config_by_image, load_tool_manifest
 
 
 # -----------------------------------------------------------------------------
@@ -27,29 +31,17 @@ from functools import lru_cache
 # -----------------------------------------------------------------------------
 
 REPO_MAP = {
-    # Discovery
-    "deadbolt-subfinder": "projectdiscovery/subfinder",
-    "deadbolt-dnsx": "projectdiscovery/dnsx",
-    "deadbolt-httpx": "projectdiscovery/httpx",
-    "deadbolt-apktool": "iBotPeaches/Apktool",
-    "deadbolt-androguard": "androguard/androguard",
+    config.image.split(":", 1)[0]: config.repository
+    for config in load_tool_manifest().tools.values()
+}
 
-    # Enumeration
-    "deadbolt-katana": "projectdiscovery/katana",
-    "deadbolt-gau": "lc/gau",
-    "deadbolt-ffuf": "ffuf/ffuf",
-    "deadbolt-hakrawler": "hakluke/hakrawler",
-    "deadbolt-waybackurls": "tomnomnom/waybackurls",
-    "deadbolt-linkfinder": "GerbenJavado/LinkFinder",  # Added
-
-    # Vulnerability / Analysis
-    "deadbolt-nuclei": "projectdiscovery/nuclei",
-    "deadbolt-schemathesis": "schemathesis/schemathesis",
-    "deadbolt-paramspider": "devanshbatham/ParamSpider",
-    "deadbolt-graphql-cop": "dolevf/graphql-cop",
-    "deadbolt-jadx": "skylot/jadx",
-    "opensecurity/mobile-security-framework-mobsf":
-        "MobSF/Mobile-Security-Framework-MobSF",
+# These images are built from an immutable source commit rather than a release
+# artifact. Comparing their installed commit to a release tag would always
+# produce a false update warning.
+COMMIT_TRACKED_IMAGES = {
+    config.image.split(":", 1)[0]
+    for config in load_tool_manifest().tools.values()
+    if config.version_type == "commit"
 }
 
 
@@ -75,7 +67,20 @@ def _get_latest_release(repo: str) -> str | None:
     return tag.lstrip("v") if tag else None
 
 
-def _get_latest_commit(repo: str) -> str | None:
+def _get_latest_nmap_release() -> str | None:
+    """Resolve the stable source release advertised by nmap.org."""
+
+    try:
+        response = requests.get("https://nmap.org/download.html", timeout=5)
+    except Exception:
+        return None
+    if response.status_code != 200:
+        return None
+    versions = re.findall(r"nmap-(\d+\.\d+)\.tar\.bz2", response.text)
+    return versions[0] if versions else None
+
+
+def _get_latest_commit(repo: str, *, short: bool = True) -> str | None:
     """
     Fallback resolver: fetch latest commit SHA from default branch.
     Returns short SHA (7 chars) for display.
@@ -95,7 +100,23 @@ def _get_latest_commit(repo: str) -> str | None:
         return None
 
     sha = commits[0].get("sha")
-    return sha[:7] if sha else None
+    if not sha:
+        return None
+    return sha[:7] if short else sha
+
+
+@lru_cache(maxsize=32)
+def get_latest_pin(image: str) -> str | None:
+    """Resolve the complete value suitable for writing back to the manifest."""
+
+    config = get_tool_config_by_image(image)
+    if not config:
+        return None
+    if config.source == "nmap":
+        return _get_latest_nmap_release()
+    if config.version_type == "commit":
+        return _get_latest_commit(config.repository, short=False)
+    return _get_latest_release(config.repository)
 
 
 # -----------------------------------------------------------------------------
@@ -115,14 +136,20 @@ def get_latest_version(image: str) -> str | None:
     This function is informational only and never raises.
     """
 
-    repo = REPO_MAP.get(image)
-    if not repo:
+    config = get_tool_config_by_image(image)
+    if not config:
         return None
 
+    if config.source == "nmap":
+        return _get_latest_nmap_release()
+
+    if config.version_type == "commit":
+        return _get_latest_commit(config.repository)
+
     # Attempt release first
-    release = _get_latest_release(repo)
+    release = _get_latest_release(config.repository)
     if release:
         return release
 
     # Fallback to commit (for repos without releases, e.g., LinkFinder)
-    return _get_latest_commit(repo)
+    return _get_latest_commit(config.repository)

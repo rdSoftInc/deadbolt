@@ -15,6 +15,8 @@
 
 FROM python:3.11-slim
 
+ARG TOOL_VERSION
+
 # Install minimal system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -24,7 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pinned Androguard version for deterministic builds
-RUN pip install --no-cache-dir androguard==4.1.3
+RUN pip install --no-cache-dir "androguard==${TOOL_VERSION}"
 
 # Set default working directory
 WORKDIR /work

@@ -20,8 +20,10 @@ import requests
 import json
 import re
 
+from main.core.tool_manifest import get_tool_config
 
-MOBSF_IMAGE = "opensecurity/mobile-security-framework-mobsf:latest"
+
+MOBSF_IMAGE = get_tool_config("mobsf").image
 MOBSF_PORT = 8000
 STARTUP_TIMEOUT = 300
 
@@ -170,7 +172,7 @@ def run_mobsf(prod_pack: Path, output: Path) -> None:
         mime = "application/octet-stream"
     else:
         raise RuntimeError("MobSF supports only .apk and .ipa files")
-    
+
     log(f"Detected platform: {'Android' if prod_pack.suffix == '.apk' else 'iOS'}")
 
     # Upload file and trigger scan

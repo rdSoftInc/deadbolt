@@ -13,14 +13,32 @@
 # Date: 2026
 # -----------------------------------------------------------------------------
 
-# Use a minimal Alpine-based Go image for small footprint and fast builds
-FROM golang:1.25-alpine
+# Use the official release artifact so ffuf's GoReleaser-injected version and
+# build metadata are preserved exactly.
+FROM alpine:3.23
 
-# Install runtime dependencies required for Go tooling and HTTPS access
-RUN apk add --no-cache ca-certificates git
+ARG TOOL_VERSION
+ARG TARGETARCH
 
-# Install a pinned ffuf version to ensure deterministic and reproducible builds
-RUN go install github.com/ffuf/ffuf/v2@v2.1.0
+# Install only the dependencies needed to fetch and verify the release.
+RUN apk add --no-cache ca-certificates curl tar
+
+# Download the official platform artifact and verify it against the checksum
+# file published with the same GitHub release.
+RUN case "${TARGETARCH}" in \
+      amd64|arm64|386) FFUF_ARCH="${TARGETARCH}" ;; \
+      arm) FFUF_ARCH="armv6" ;; \
+      *) echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+ && ARCHIVE="ffuf_${TOOL_VERSION}_linux_${FFUF_ARCH}.tar.gz" \
+ && BASE_URL="https://github.com/ffuf/ffuf/releases/download/v${TOOL_VERSION}" \
+ && curl -fsSLO "${BASE_URL}/${ARCHIVE}" \
+ && curl -fsSLo checksums.txt "${BASE_URL}/ffuf_${TOOL_VERSION}_checksums.txt" \
+ && grep " ${ARCHIVE}$" checksums.txt | sha256sum -c - \
+ && tar -xzf "${ARCHIVE}" -C /usr/local/bin ffuf \
+ && chmod +x /usr/local/bin/ffuf \
+ && rm -f "${ARCHIVE}" checksums.txt \
+ && ffuf -V
 
 # Run ffuf CLI by default when the container starts
 ENTRYPOINT ["ffuf"]

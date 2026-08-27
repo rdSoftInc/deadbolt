@@ -16,6 +16,8 @@
 from dataclasses import dataclass
 from typing import Dict, Literal
 
+from main.core.tool_manifest import get_tool_config
+
 # Types describing tool input/output and execution phases
 AssetType = Literal["ipa", "classes", "findings"]
 PhaseType = Literal["static", "extraction", "analysis"]
@@ -64,7 +66,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "mobsf": ToolSpec(
         name="mobsf",
-        image="opensecurity/mobile-security-framework-mobsf",
+        image=get_tool_config("mobsf").image,
         phase="static",
         consumes="ipa",
         produces="findings",

@@ -18,14 +18,11 @@
 import subprocess
 import re
 from functools import lru_cache
-from typing import Optional
+
+from main.core.tool_manifest import get_tool_config_by_image
 
 # Regular expression used to extract semantic version strings
-VERSION_RE = re.compile(r"(?:v)?\d+\.\d+\.\d+")
-
-# Common CLI flags used to query tool versions
-VERSION_FLAGS = ["-version", "--version", "version"]
-
+VERSION_RE = re.compile(r"(?:v)?\d+\.\d+(?:\.\d+)?")
 
 @lru_cache(maxsize=32)
 def get_tool_version(image: str) -> str:
@@ -41,46 +38,52 @@ def get_tool_version(image: str) -> str:
     execution.
     """
 
-    # -------------------------------
-    # Explicit version mappings
-    # -------------------------------
+    config = get_tool_config_by_image(image)
+    if config and config.version_detection == "configured":
+        if not config.managed and ":" in image:
+            tag = image.rsplit(":", 1)[1]
+            if tag and tag != "latest":
+                return tag.lstrip("v")
+        return config.display_version
 
-    # MobSF does not expose a stable CLI version
-    if image == "opensecurity/mobile-security-framework-mobsf":
-        return "4.4.5"
-
-    # graphql-cop does not reliably expose version information
-    if image == "deadbolt-graphql-cop":
-        return "1.15"
-
-    # hakrawler version is not consistently exposed via CLI
-    if image == "deadbolt-hakrawler":
-        return "2.1"
-
-    # ParamSpider does not provide a standard version flag
-    if image == "deadbolt-paramspider":
-        return "1.0.1"
-
-    # waybackurls version is static and not printed via CLI
-    if image == "deadbolt-waybackurls":
-        return "0.1.0"
-    
-    # linkfinder does not have versioned releases and does not expose version info, hence commit hash is used
-    if image == "deadbolt-linkfinder":
-        return "1debac5"
-    
-    # apktool version is available via docker run --rm --entrypoint /bin/sh deadbolt-apktool -c "java -jar /usr/local/bin/apktool.jar --version" but better to be static
-    if image == "deadbolt-apktool":
-        return "2.12.1"
+    if config and config.version_detection == "image_label":
+        try:
+            result = subprocess.run(
+                [
+                    "docker",
+                    "image",
+                    "inspect",
+                    image,
+                    "--format",
+                    '{{index .Config.Labels "io.deadbolt.tool.version"}}',
+                ],
+                capture_output=True,
+                text=True,
+                timeout=8,
+                check=False,
+            )
+            label_version = result.stdout.strip().lstrip("v")
+            if result.returncode == 0 and label_version and label_version != "<no value>":
+                if config.version_type == "commit" and len(label_version) == 40:
+                    return label_version[:7]
+                return label_version
+        except (OSError, subprocess.SubprocessError):
+            pass
 
     # -------------------------------
     # Generic CLI-based detection
     # -------------------------------
 
-    for flag in VERSION_FLAGS:
+    version_args = config.version_args if config else [
+        ["-version"],
+        ["--version"],
+        ["version"],
+    ]
+
+    for args in version_args:
         try:
             result = subprocess.run(
-                ["docker", "run", "--rm", image, flag],
+                ["docker", "run", "--rm", image, *args],
                 capture_output=True,
                 text=True,
                 timeout=8,

@@ -17,10 +17,13 @@ FROM python:3.12-alpine
 
 RUN apk add --no-cache git
 
+ARG TOOL_COMMIT
+LABEL io.deadbolt.tool.version="${TOOL_COMMIT}"
+
 # Install LinkFinder at pinned commit for reproducibility
 RUN git clone https://github.com/GerbenJavado/LinkFinder.git /opt/linkfinder \
  && cd /opt/linkfinder \
- && git checkout 1debac5 \
+ && git checkout "${TOOL_COMMIT}" \
  && pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /opt/linkfinder

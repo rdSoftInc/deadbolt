@@ -28,7 +28,7 @@ _CACHE_LOCK = threading.Lock()
 DEFAULT_TTL = 3600  # 1 hour
 
 # Values considered invalid for caching purposes
-INVALID_VALUES = {"unknown", "checking…", "-", "rolling", None}
+INVALID_VALUES = {"unknown", "checking…", "detecting…", "-", "rolling", None}
 
 
 def load_cache() -> dict:
@@ -103,6 +103,27 @@ def is_valid(value) -> bool:
     re-resolution.
     """
     return value not in INVALID_VALUES
+
+
+def get_fresh_cached_versions(image: str) -> tuple[str, str] | None:
+    """Return a fresh cached version pair without performing any I/O upstream.
+
+    Assessment execution must never wait for release APIs. Active resolution
+    belongs to ``deadbolt tools status``; runners use this read-only helper for
+    optional display context only.
+    """
+
+    with _CACHE_LOCK:
+        cache = load_cache()
+        ttl = cache.get("ttl_seconds", DEFAULT_TTL)
+        entry = cache.get("tools", {}).get(image)
+        if not entry or not is_fresh(entry, ttl):
+            return None
+        installed = entry.get("installed")
+        latest = entry.get("latest")
+        if not is_valid(installed) or not is_valid(latest):
+            return None
+        return str(installed), str(latest)
 
 
 def invalidate_version(image: str) -> None:

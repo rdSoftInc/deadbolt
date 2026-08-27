@@ -53,8 +53,19 @@ def _findings_to_work_items(
     Mapping:
       - assets   -> Finding.asset
       - paths    -> Finding.asset
-      - findings -> no downstream worklist (empty)
+      - findings -> compact tab-separated finding index for auditability
     """
     if output_type in ("assets", "paths"):
         return [f.asset for f in findings]
+    if output_type == "findings":
+        return [
+            "\t".join(
+                (
+                    f.severity or "info",
+                    f.asset,
+                    f.template_id or f.title,
+                )
+            )
+            for f in findings
+        ]
     return []

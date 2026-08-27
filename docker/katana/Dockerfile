@@ -12,17 +12,34 @@
 # Date: 2026
 # -----------------------------------------------------------------------------
 
-# Use a minimal Alpine-based Go image with build dependencies
-FROM golang:1.25-alpine
+# Compile in an isolated build stage so the runtime does not carry Go.
+FROM golang:1.26-alpine AS builder
 
-# Install runtime and build dependencies required for katana
+ARG TOOL_VERSION
+
+# Install build dependencies required for katana.
 RUN apk add --no-cache ca-certificates git build-base libc-dev
 
 # Enable CGO for native dependency support
 ENV CGO_ENABLED=1
 
 # Install a pinned katana version for deterministic builds
-RUN go install github.com/projectdiscovery/katana/cmd/katana@v1.4.0
+RUN go install "github.com/projectdiscovery/katana/cmd/katana@v${TOOL_VERSION}"
+
+# Chromium is present only at runtime and enables the opt-in Deep SPA profile.
+FROM alpine:3.23
+
+RUN apk add --no-cache \
+    ca-certificates \
+    chromium \
+    freetype \
+    harfbuzz \
+    nss \
+    ttf-freefont
+
+COPY --from=builder /go/bin/katana /usr/local/bin/katana
+
+ENV CHROME_BIN=/usr/bin/chromium-browser
 
 # Run katana CLI by default when the container starts
 ENTRYPOINT ["katana"]

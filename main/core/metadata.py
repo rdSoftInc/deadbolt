@@ -30,6 +30,13 @@ def write_metadata(
     domain: str,
     deadbolt_version: str = "1.2.0",
     errors: Optional[Dict[str, str]] = None,
+    scope_snapshot: Optional[Path] = None,
+    scope_hash: Optional[str] = None,
+    local_lab: bool = False,
+    target_mapping: Optional[Dict[str, str]] = None,
+    scan_profile: str = "standard",
+    browser_assisted: bool = False,
+    rate_limit: float | None = None,
 ):
     """
     Write execution metadata for a Deadbolt scan run.
@@ -52,6 +59,19 @@ def write_metadata(
         "tools": tools,
         "errors": errors or {},
     }
+    if scope_snapshot is not None:
+        try:
+            meta["scope_snapshot"] = str(scope_snapshot.relative_to(base_dir))
+        except ValueError:
+            meta["scope_snapshot"] = str(scope_snapshot)
+    if scope_hash is not None:
+        meta["scope_hash"] = scope_hash
+    meta["local_lab"] = local_lab
+    meta["scan_profile"] = scan_profile
+    meta["browser_assisted"] = browser_assisted
+    meta["rate_limit"] = rate_limit
+    if target_mapping:
+        meta["target_mapping"] = target_mapping
 
     meta_path = base_dir / "meta.json"
     with meta_path.open("w", encoding="utf-8") as f:

@@ -17,9 +17,21 @@
 from dataclasses import dataclass
 from typing import Dict, Literal
 
+from main.core.tool_manifest import get_tool_config
+
 # Types describing tool input/output artifacts and execution phases
-AssetType = Literal["targets", "assets", "paths", "findings"]
+AssetType = Literal["targets", "assets", "paths", "scan_targets", "findings"]
 PhaseType = Literal["discovery", "enumeration", "vulnerability"]
+ToolCategory = Literal["discover", "validate", "enumerate", "test"]
+
+TOOL_CATEGORIES: Dict[str, ToolCategory] = {
+    "subfinder": "discover", "dnsx": "discover", "naabu": "discover", "tlsx": "discover",
+    "httpx": "validate", "httpx_paths": "validate",
+    "gau": "enumerate", "waybackurls": "enumerate", "katana": "enumerate",
+    "hakrawler": "enumerate", "ffuf": "enumerate", "linkfinder": "enumerate",
+    "paramspider": "enumerate", "graphql-cop": "enumerate", "arjun": "enumerate",
+    "nuclei": "test",
+}
 
 
 @dataclass(frozen=True)
@@ -56,6 +68,12 @@ class ToolSpec:
     # Whether the tool may be executed in parallel
     parallel: bool
 
+    @property
+    def category(self) -> ToolCategory:
+        """User-facing lifecycle category for this logical tool role."""
+
+        return TOOL_CATEGORIES[self.name]
+
 
 # ---------------------------------------------------------------------
 # Deadbolt Web Tool Registry
@@ -64,7 +82,8 @@ class ToolSpec:
 # - ToolSpec represents intent, not binaries
 # - The same binary may appear multiple times with different roles
 # - Tool names must match runtime registry keys
-# - All tools produce paths that are consumed by httpx_paths before Nuclei
+# - Enumeration tools produce isolated paths merged before httpx_paths
+# - Nuclei consumes the union of live roots and validated in-scope paths
 # ---------------------------------------------------------------------
 
 TOOL_REGISTRY: Dict[str, ToolSpec] = {
@@ -75,7 +94,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "subfinder": ToolSpec(
         name="subfinder",
-        image="deadbolt-subfinder",
+        image=get_tool_config("subfinder").image,
         phase="discovery",
         consumes="targets",
         produces="assets",
@@ -86,7 +105,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "dnsx": ToolSpec(
         name="dnsx",
-        image="deadbolt-dnsx",
+        image=get_tool_config("dnsx").image,
         phase="discovery",
         consumes="assets",
         produces="assets",
@@ -95,10 +114,23 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
         parallel=False,
     ),
 
+    "naabu": ToolSpec(
+        name="naabu",
+        image=get_tool_config("naabu").image,
+        phase="discovery",
+        consumes="assets",
+        produces="assets",
+        produces_severity=False,
+        severity_gated=False,
+        parallel=False,
+    ),
+
+    "tlsx": ToolSpec(name="tlsx", image=get_tool_config("tlsx").image, phase="discovery", consumes="assets", produces="assets", produces_severity=False, severity_gated=False, parallel=True),
+
     # httpx — asset validation / classification
     "httpx": ToolSpec(
         name="httpx",
-        image="deadbolt-httpx",
+        image=get_tool_config("httpx").image,
         phase="discovery",
         consumes="assets",
         produces="assets",
@@ -113,7 +145,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "gau": ToolSpec(
         name="gau",
-        image="deadbolt-gau",
+        image=get_tool_config("gau").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
@@ -124,41 +156,41 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "waybackurls": ToolSpec(
         name="waybackurls",
-        image="deadbolt-waybackurls",
+        image=get_tool_config("waybackurls").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
         produces_severity=False,
         severity_gated=False,
-        parallel=False,
+        parallel=True,
     ),
 
     "katana": ToolSpec(
         name="katana",
-        image="deadbolt-katana",
+        image=get_tool_config("katana").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
         produces_severity=False,
         severity_gated=False,
-        parallel=False,
+        parallel=True,
     ),
 
     "hakrawler": ToolSpec(
         name="hakrawler",
-        image="deadbolt-hakrawler",
+        image=get_tool_config("hakrawler").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
         produces_severity=False,
         severity_gated=False,
-        parallel=False,
+        parallel=True,
     ),
 
     # ffuf — endpoint discovery
     "ffuf": ToolSpec(
         name="ffuf",
-        image="deadbolt-ffuf",
+        image=get_tool_config("ffuf").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
@@ -169,7 +201,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "linkfinder": ToolSpec(
         name="linkfinder",
-        image="deadbolt-linkfinder",
+        image=get_tool_config("linkfinder").image,
         phase="enumeration",
         consumes="paths",
         produces="paths",
@@ -181,13 +213,13 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
     # httpx — path validation / enrichment
     "httpx_paths": ToolSpec(
         name="httpx_paths",
-        image="deadbolt-httpx",
+        image=get_tool_config("httpx").image,
         phase="enumeration",
         consumes="paths",
         produces="paths",
         produces_severity=False,
         severity_gated=False,
-        parallel=True,
+        parallel=False,
     ),
 
     # ─────────────────────────────
@@ -196,25 +228,27 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "paramspider": ToolSpec(
         name="paramspider",
-        image="deadbolt-paramspider",
+        image=get_tool_config("paramspider").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
         produces_severity=False,
         severity_gated=False,
-        parallel=False,
+        parallel=True,
     ),
 
     "graphql-cop": ToolSpec(
         name="graphql-cop",
-        image="deadbolt-graphql-cop",
+        image=get_tool_config("graphql-cop").image,
         phase="enumeration",
         consumes="assets",
         produces="paths",
         produces_severity=False,
         severity_gated=False,
-        parallel=False,
+        parallel=True,
     ),
+
+    "arjun": ToolSpec(name="arjun", image=get_tool_config("arjun").image, phase="enumeration", consumes="assets", produces="paths", produces_severity=False, severity_gated=False, parallel=True),
 
     # ─────────────────────────────
     # Vulnerability — execution
@@ -222,12 +256,12 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "nuclei": ToolSpec(
         name="nuclei",
-        image="deadbolt-nuclei",
+        image=get_tool_config("nuclei").image,
         phase="vulnerability",
-        consumes="assets",
+        consumes="scan_targets",
         produces="findings",
         produces_severity=True,
         severity_gated=True,
-        parallel=True,
+        parallel=False,
     ),
 }

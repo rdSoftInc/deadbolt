@@ -25,6 +25,10 @@ from main.tools.dnsx.parser import parse_dnsx
 
 from main.tools.httpx.runner import run_httpx
 from main.tools.httpx.parser import parse_httpx
+from main.tools.naabu.runner import run_naabu
+from main.tools.naabu.parser import parse_naabu
+from main.tools.tlsx.runner import run_tlsx
+from main.tools.tlsx.parser import parse_tlsx
 
 
 # ──────────────── Enumeration ────────────────
@@ -52,6 +56,8 @@ from main.tools.graphql_cop.parser import parse_graphql_cop
 
 from main.tools.linkfinder.runner import run_linkfinder
 from main.tools.linkfinder.parser import parse_linkfinder
+from main.tools.arjun.runner import run_arjun
+from main.tools.arjun.parser import parse_arjun
 
 # ──────────────── Vulnerability ────────────────
 
@@ -94,7 +100,16 @@ TOOL_RUNTIMES = {
         runner=run_httpx,
         parser=parse_httpx,
         output_name="httpx.json",
+        revision=2,
     ),
+
+    "naabu": ToolRuntime(
+        runner=run_naabu,
+        parser=parse_naabu,
+        output_name="naabu.jsonl",
+        revision=1,
+    ),
+    "tlsx": ToolRuntime(runner=run_tlsx, parser=parse_tlsx, output_name="tlsx.jsonl", revision=1),
 
     # ---------------- Enumeration ----------------
 
@@ -114,6 +129,7 @@ TOOL_RUNTIMES = {
         runner=run_katana,
         parser=parse_katana,
         output_name="katana.txt",
+        revision=7,
     ),
 
     "hakrawler": ToolRuntime(
@@ -126,6 +142,7 @@ TOOL_RUNTIMES = {
         runner=run_ffuf,
         parser=parse_ffuf,
         output_name="ffuf.json",
+        revision=3,
     ),
 
     "paramspider": ToolRuntime(
@@ -139,11 +156,13 @@ TOOL_RUNTIMES = {
         parser=parse_graphql_cop,
         output_name="graphql_cop.txt",
     ),
+    "arjun": ToolRuntime(runner=run_arjun, parser=parse_arjun, output_name="arjun.json", revision=2),
 
     "linkfinder": ToolRuntime(
         runner=run_linkfinder,
         parser=parse_linkfinder,
         output_name="linkfinder.json",
+        revision=7,
     ),
 
     # ---------------- Enrichment ----------------
@@ -154,6 +173,7 @@ TOOL_RUNTIMES = {
         output_name="httpx.json",
         postprocess=_mark_paths,
         raw_subdir="httpx_paths",
+        revision=3,
     ),
 
     # ---------------- Vulnerability ----------------
@@ -162,6 +182,7 @@ TOOL_RUNTIMES = {
         runner=run_nuclei,
         parser=parse_nuclei,
         output_name="nuclei.jsonl",
+        revision=4,
     ),
 
 }

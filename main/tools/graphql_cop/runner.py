@@ -16,6 +16,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+from main.core.tool_manifest import get_tool_config
+
 
 # Common GraphQL endpoint paths to probe
 GRAPHQL_COMMON_PATHS = [
@@ -69,7 +71,7 @@ def run_graphql_cop(targets: Path, output: Path):
                 proc = subprocess.run(
                     [
                         "docker", "run", "--rm",
-                        "deadbolt-graphql-cop",
+                        get_tool_config("graphql-cop").image,
                         "-t", endpoint,
                         "--quiet",
                     ],

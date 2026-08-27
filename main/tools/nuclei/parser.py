@@ -209,6 +209,8 @@ def parse_nuclei(raw_file: Path) -> List[Finding]:
                     evidence_path=str(raw_file),
                     metadata={
                         "source": "nuclei",
+                        "tool_severity": template_severity,
+                        "verification_status": "Unverified",
                         "vulnerability_type": vuln_type,
                         "description": description,
                         "matched_at": matched_at,

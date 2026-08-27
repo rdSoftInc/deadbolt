@@ -18,6 +18,8 @@ from pathlib import Path
 import subprocess
 import json
 
+from main.core.tool_manifest import get_tool_config
+
 
 def _run(cmd: list[str]) -> str:
     result = subprocess.run(
@@ -43,7 +45,7 @@ def run_androguard(apk: Path, output: Path) -> None:
     data["apkid"] = _run([
         "docker", "run", "--rm",
         "-v", f"{apk.resolve()}:/input.apk",
-        "deadbolt-androguard",
+        get_tool_config("androguard").image,
         "apkid",
         "/input.apk",
     ])
@@ -51,7 +53,7 @@ def run_androguard(apk: Path, output: Path) -> None:
     data["axml"] = _run([
         "docker", "run", "--rm",
         "-v", f"{apk.resolve()}:/input.apk",
-        "deadbolt-androguard",
+        get_tool_config("androguard").image,
         "axml",
         "/input.apk",
     ])
@@ -59,7 +61,7 @@ def run_androguard(apk: Path, output: Path) -> None:
     data["sign"] = _run([
         "docker", "run", "--rm",
         "-v", f"{apk.resolve()}:/input.apk",
-        "deadbolt-androguard",
+        get_tool_config("androguard").image,
         "sign",
         "/input.apk",
     ])

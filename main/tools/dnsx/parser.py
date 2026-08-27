@@ -27,6 +27,7 @@
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Tuple, Dict
+import json
 import re
 
 from main.schema.normalize import Finding
@@ -192,7 +193,12 @@ def parse_dnsx(raw_file: Path) -> List[Finding]:
 
     with raw_file.open(encoding="utf-8") as f:
         for line in f:
-            domain = line.strip().lower()
+            raw = line.strip()
+            try:
+                record = json.loads(raw)
+            except json.JSONDecodeError:
+                record = {}
+            domain = str(record.get("host") or record.get("input") or raw).strip().lower()
             if not domain:
                 continue
 
@@ -224,6 +230,9 @@ def parse_dnsx(raw_file: Path) -> List[Finding]:
                     "subdomain_type": subdomain_type,
                     "base_domain": base_domain,
                     "confidence": confidence,
+                    "a": record.get("a", []),
+                    "aaaa": record.get("aaaa", []),
+                    "cname": record.get("cname", []),
                 },
             )
 

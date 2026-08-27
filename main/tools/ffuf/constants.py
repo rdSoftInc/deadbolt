@@ -12,8 +12,10 @@
 
 from pathlib import Path
 
+from main.core.tool_manifest import get_tool_config
+
 # Docker image name
-FFUF_IMAGE = "deadbolt-ffuf"
+FFUF_IMAGE = get_tool_config("ffuf").image
 
 # Deterministic wordlist (shallow scan)
 FFUF_WORDLIST_HOST_PATH = Path("wordlists/shallow.txt")

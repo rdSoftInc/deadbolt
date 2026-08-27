@@ -65,3 +65,4 @@ def run_container(
             f"STDERR:\n{result.stderr}\n"
             f"STDOUT:\n{result.stdout}"
         )
+    return result

@@ -1,0 +1,26 @@
+schema_version: 1
+name: Example Authorized Assessment
+engagement_type: bug_bounty
+mode: safe
+scope:
+  allow_hosts:
+    - example.com
+    - '*.example.com'
+  deny_hosts:
+    - admin.example.com
+  allow_networks:
+    - 192.0.2.0/28
+  deny_networks: []
+  # Web launches currently require port rules to remain unspecified.
+  allow_ports: []
+  deny_ports: []
+  # Recording exclusions blocks Web launch until every adapter can enforce them.
+  exclude_paths: []
+traffic:
+  automation_allowed: true
+  max_requests_per_second: 1
+  # Required user agents or headers are recorded but intentionally block Web launch
+  # until all scanner adapters can apply them consistently.
+  user_agent: null
+  headers: {}
+notes: Replace every example value with the program's written authorization and scope.

@@ -14,6 +14,7 @@
 
 from pathlib import Path
 from main.execution.docker import run_container
+from main.core.tool_manifest import get_tool_config
 
 
 def run_gau(targets: Path, output: Path):
@@ -32,7 +33,7 @@ def run_gau(targets: Path, output: Path):
       - AlienVault OTX
     """
     run_container(
-        image="deadbolt-gau",
+        image=get_tool_config("gau").image,
         args=[
             "--providers", "wayback,commoncrawl,otx",
             "--subs",

@@ -15,6 +15,7 @@
 from pathlib import Path
 from urllib.parse import urlparse
 from main.execution.docker import run_container
+from main.core.tool_manifest import get_tool_config
 
 
 def _normalize_domains(input_file: Path) -> Path:
@@ -67,7 +68,7 @@ def run_waybackurls(targets: Path, output: Path):
     domains_file = _normalize_domains(targets)
 
     run_container(
-        image="deadbolt-waybackurls",
+        image=get_tool_config("waybackurls").image,
         entrypoint="sh",
         args=[
             "-c",

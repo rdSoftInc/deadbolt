@@ -14,13 +14,15 @@
 # -----------------------------------------------------------------------------
 
 # Use a minimal Alpine-based Go image for small footprint and fast builds
-FROM golang:1.25-alpine
+FROM golang:1.26-alpine
+
+ARG TOOL_VERSION
 
 # Install runtime dependencies required for Go tooling and HTTPS access
 RUN apk add --no-cache ca-certificates git
 
 # Install a pinned nuclei version for deterministic builds
-RUN go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@v3.7.0
+RUN go install "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@v${TOOL_VERSION}"
 
 # Update nuclei templates during build time
 RUN nuclei -update-templates

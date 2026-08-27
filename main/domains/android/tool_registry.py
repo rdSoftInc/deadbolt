@@ -16,6 +16,8 @@
 from dataclasses import dataclass
 from typing import Dict, Literal
 
+from main.core.tool_manifest import get_tool_config
+
 # Types describing tool input/output and execution phases
 AssetType = Literal["apk", "assets", "findings"]
 PhaseType = Literal["static", "analysis"]
@@ -62,7 +64,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "apktool": ToolSpec(
         name="apktool",
-        image="deadbolt-apktool",
+        image=get_tool_config("apktool").image,
         phase="static",
         consumes="apk",
         produces="assets",
@@ -73,7 +75,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "jadx": ToolSpec(
         name="jadx",
-        image="deadbolt-jadx",
+        image=get_tool_config("jadx").image,
         phase="static",
         consumes="apk",
         produces="assets",
@@ -84,7 +86,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "androguard": ToolSpec(
         name="androguard",
-        image="deadbolt-androguard",
+        image=get_tool_config("androguard").image,
         phase="static",
         consumes="apk",
         produces="findings",
@@ -97,7 +99,7 @@ TOOL_REGISTRY: Dict[str, ToolSpec] = {
 
     "mobsf": ToolSpec(
         name="mobsf",
-        image="opensecurity/mobile-security-framework-mobsf",
+        image=get_tool_config("mobsf").image,
         phase="analysis",
         consumes="apk",
         produces="findings",

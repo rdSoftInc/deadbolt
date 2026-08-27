@@ -14,6 +14,7 @@
 
 from pathlib import Path
 from main.execution.docker import run_container
+from main.core.tool_manifest import get_tool_config
 
 
 def run_subfinder(targets: Path, output: Path):
@@ -31,7 +32,7 @@ def run_subfinder(targets: Path, output: Path):
       - Output is one subdomain per line
     """
     run_container(
-        image="deadbolt-subfinder",
+        image=get_tool_config("subfinder").image,
         args=[
             "-dL", "/targets.txt",
             "-silent",

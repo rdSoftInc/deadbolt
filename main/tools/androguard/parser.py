@@ -41,7 +41,7 @@ from main.schema.normalize import Finding
 # -----------------------------------------------------------------------------
 
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
-CURRENT_RECOMMENDED_TARGET = 34
+CURRENT_RECOMMENDED_TARGET = 36
 
 
 DANGEROUS_PERMISSIONS = {
@@ -288,7 +288,11 @@ def parse_androguard(raw_file: Path) -> List[Finding]:
             f"Target SDK version outdated (SDK {manifest['target_sdk']})",
             "finding",
             "low",
-            {"category": "sdk_posture"},
+            {
+                "category": "sdk_posture",
+                "recommended_target_sdk": CURRENT_RECOMMENDED_TARGET,
+                "policy": "Google Play phone/tablet new apps and updates from 2026-08-31",
+            },
         )
 
     # ------------------------------------------------------------------

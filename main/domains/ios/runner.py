@@ -160,7 +160,7 @@ def run_ios(
                     and tool_state.get("status") == "done"
                     and tool_state.get("input_hash") == input_hash
                 ):
-                    table.tool_skipped(name)
+                    table.tool_cached(name)
                     continue
 
                 tool_started_at = datetime.now(timezone.utc)

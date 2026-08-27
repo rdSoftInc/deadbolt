@@ -15,6 +15,8 @@
 from pathlib import Path
 import subprocess
 
+from main.core.tool_manifest import get_tool_config
+
 
 def run_hakrawler(targets: Path, output: Path):
     """
@@ -49,7 +51,7 @@ def run_hakrawler(targets: Path, output: Path):
     # Container execution (stdin-fed)
     # -------------------------------
     proc = subprocess.run(
-        ["docker", "run", "--rm", "-i", "deadbolt-hakrawler"],
+        ["docker", "run", "--rm", "-i", get_tool_config("hakrawler").image],
         input="\n".join(urls),
         text=True,
         capture_output=True,

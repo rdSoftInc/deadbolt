@@ -16,6 +16,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+from main.core.tool_manifest import get_tool_config
+
 
 def run_paramspider(targets: Path, output: Path):
     """
@@ -56,7 +58,7 @@ def run_paramspider(targets: Path, output: Path):
                 [
                     "docker", "run", "--rm",
                     "-v", f"{tmp}:/output",
-                    "deadbolt-paramspider",
+                    get_tool_config("paramspider").image,
                     "-d", url,
                     "-o", "/output",
                 ],

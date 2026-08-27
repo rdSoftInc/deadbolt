@@ -14,6 +14,7 @@
 
 from pathlib import Path
 from main.execution.docker import run_container
+from main.core.tool_manifest import get_tool_config
 
 
 def run_dnsx(targets: Path, output: Path):
@@ -30,10 +31,10 @@ def run_dnsx(targets: Path, output: Path):
     mounted explicitly to ensure deterministic behavior.
     """
     run_container(
-        image="deadbolt-dnsx",
+        image=get_tool_config("dnsx").image,
         args=[
             "-l", "/targets.txt",
-            "-silent",
+            "-silent", "-json", "-a", "-aaaa", "-cname", "-resp",
             "-o", "/output/dnsx.txt",
         ],
         mounts={

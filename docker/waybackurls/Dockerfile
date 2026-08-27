@@ -13,13 +13,16 @@
 # -----------------------------------------------------------------------------
 
 # Use a minimal Alpine-based Go image for small footprint and fast builds
-FROM golang:1.25-alpine
+FROM golang:1.26-alpine
+
+ARG TOOL_VERSION
+LABEL io.deadbolt.tool.version="${TOOL_VERSION}"
 
 # Install runtime dependencies required for Go tooling and HTTPS access
 RUN apk add --no-cache ca-certificates git
 
 # Install a pinned waybackurls version for deterministic builds
-RUN go install github.com/tomnomnom/waybackurls@v0.1.0
+RUN go install "github.com/tomnomnom/waybackurls@v${TOOL_VERSION}"
 
 # Run waybackurls CLI by default when the container starts
 ENTRYPOINT ["waybackurls"]

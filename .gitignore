@@ -41,12 +41,45 @@ outputs/**
 .deadbolt/
 *.cache.json
 
+# Engagements contain client names, scope, traffic rules, and private notes.
+engagements/**
+!engagements/example.yaml
+
+# Target lists are private by default. Keep documentation and intentionally
+# bundled vulnerable training applications available to contributors.
+targets/**
+!targets/**/
+!targets/**/README.md
+!targets/**/*.example.txt
+!targets/android/AndroGoat.apk
+!targets/ios/iGoat-Swift.ipa
+
+# The active scope is local engagement data. Public examples must use an
+# explicit .example suffix.
+/scope.yaml
+/scope.local.yaml
+/scope.local.yml
+!/scope.example.yaml
+!/scope.example.yml
+
 # =========================
 # Reports
 # =========================
 report.html
 reports/
-*.html
+outputs/
+*-report.html
+*-report.pdf
+report-*.html
+report-*.pdf
+
+# Browser/proxy captures can contain credentials, cookies, tokens, and bodies.
+*.har
+*.burp
+*.burp2
+*.saz
+*.pcap
+*.pcapng
 
 # =========================
 # Logs
@@ -75,9 +108,26 @@ Thumbs.db
 # =========================
 .env
 .env.*
+!.env.example
+*.secret
+*.secrets
+*.token
+credentials.json
+secrets.json
 *.pem
 *.key
 *.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Explicit escape hatches for analyst notes, evidence, and client exports that
+# are created outside Deadbolt's normal outputs directory.
+/.private/
+/private/
+/client-data/
+/evidence/
 
 # =========================
 # Test scratch

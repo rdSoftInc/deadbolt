@@ -14,13 +14,15 @@
 # -----------------------------------------------------------------------------
 
 # Use a minimal Alpine-based Go image for small footprint and fast builds
-FROM golang:1.25-alpine
+FROM golang:1.26-alpine
+
+ARG TOOL_VERSION
 
 # Install runtime dependencies required for Go tooling and HTTPS access
 RUN apk add --no-cache ca-certificates git
 
 # Install a pinned gau version for deterministic and reproducible builds
-RUN go install github.com/lc/gau/v2/cmd/gau@v2.2.4
+RUN go install "github.com/lc/gau/v2/cmd/gau@v${TOOL_VERSION}"
 
 # Run gau CLI by default when the container starts
 ENTRYPOINT ["gau"]

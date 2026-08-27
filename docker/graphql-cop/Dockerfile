@@ -24,8 +24,11 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# Clone the graphql-cop repository into the container
-RUN git clone https://github.com/dolevf/graphql-cop.git .
+# Pin the source revision so rebuilds remain reproducible.
+ARG TOOL_COMMIT
+LABEL io.deadbolt.tool.version="${TOOL_COMMIT}"
+RUN git clone https://github.com/dolevf/graphql-cop.git . \
+ && git checkout "${TOOL_COMMIT}"
 
 # Install Python dependencies required by graphql-cop
 RUN pip install --no-cache-dir -r requirements.txt

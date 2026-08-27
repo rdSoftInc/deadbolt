@@ -16,15 +16,17 @@
 # Use Amazon Corretto JDK for stable Java runtime support
 FROM amazoncorretto:21-alpine-jdk
 
+ARG TOOL_VERSION
+
 # Install minimal runtime dependencies required for downloading and extracting jadx
 RUN apk add --no-cache wget unzip
 
 # Download and install a pinned jadx release
-RUN wget https://github.com/skylot/jadx/releases/download/v1.5.3/jadx-1.5.3.zip \
- && unzip jadx-1.5.3.zip -d /opt/jadx \
+RUN wget "https://github.com/skylot/jadx/releases/download/v${TOOL_VERSION}/jadx-${TOOL_VERSION}.zip" \
+ && unzip "jadx-${TOOL_VERSION}.zip" -d /opt/jadx \
  && chmod +x /opt/jadx/bin/jadx \
  && ln -s /opt/jadx/bin/jadx /usr/local/bin/jadx \
- && rm jadx-1.5.3.zip
+ && rm "jadx-${TOOL_VERSION}.zip"
 
 # Run jadx CLI by default when the container starts
 ENTRYPOINT ["jadx"]

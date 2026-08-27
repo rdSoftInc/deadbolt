@@ -14,6 +14,9 @@
 
 FROM amazoncorretto:21-alpine-jdk
 
+ARG TOOL_VERSION
+LABEL io.deadbolt.tool.version="${TOOL_VERSION}"
+
 # Install minimal runtime dependencies
 RUN apk add --no-cache wget bash
 
@@ -22,7 +25,7 @@ WORKDIR /opt/apktool
 
 # Download pinned apktool JAR for deterministic builds
 RUN wget -O apktool.jar \
-    https://github.com/iBotPeaches/Apktool/releases/download/v2.12.1/apktool_2.12.1.jar
+    "https://github.com/iBotPeaches/Apktool/releases/download/v${TOOL_VERSION}/apktool_${TOOL_VERSION}.jar"
 
 # Create a minimal wrapper script to invoke the apktool JAR
 RUN echo '#!/bin/bash' > /usr/local/bin/apktool && \

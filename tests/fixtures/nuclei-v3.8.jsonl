@@ -1,0 +1,2 @@
+{"template-id":"CVE-2026-0001","host":"https://example.com","matched-at":"https://example.com/vulnerable","ip":"192.0.2.1","info":{"name":"Example RCE","severity":"high","tags":["cve","rce"],"classification":{"cwe-id":["CWE-94"],"cve-id":["CVE-2026-0001"],"cvss-score":9.8,"cvss-metrics":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}}}
+{"template-id":"CVE-2026-0001","host":"https://example.com","matched-at":"https://example.com/again","info":{"name":"Example RCE duplicate","severity":"medium","classification":{"cvss-score":"7.5"}}}

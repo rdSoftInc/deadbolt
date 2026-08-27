@@ -26,6 +26,21 @@ from rich.table import Table
 from rich.box import SIMPLE
 
 
+def format_duration(seconds: float) -> str:
+    """Render elapsed time compactly without long, hard-to-read second counts."""
+
+    seconds = max(0.0, seconds)
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+
+    total = int(seconds)
+    hours, remainder = divmod(total, 3600)
+    minutes, remaining_seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes}m {remaining_seconds}s"
+    return f"{minutes}m {remaining_seconds}s"
+
+
 class ExecutionTable:
     """
     Live-rendered execution status table.
@@ -49,10 +64,12 @@ class ExecutionTable:
         # Per-tool execution timestamps
         self.started_at: Dict[str, datetime] = {}
         self.ended_at: Dict[str, datetime] = {}
+        self.durations: Dict[str, float] = {}
 
         # Per-tool execution state and results
         self.status: Dict[str, str] = {}
         self.findings: Dict[str, Optional[int]] = {}
+        self.result_summaries: Dict[str, str] = {}
 
         # Version and update tracking
         self.versions: Dict[str, str] = {}
@@ -67,7 +84,11 @@ class ExecutionTable:
         self.live = Live(
             self._render(),
             console=self.console,
-            refresh_per_second=60,
+            # Deadbolt owns the sole synchronized refresh loop below. Rich's
+            # auto-refresh thread previously raced it and left partial tables
+            # behind in terminals once the registry grew beyond a few tools.
+            auto_refresh=False,
+            vertical_overflow="ellipsis",
         )
 
     def start(self):
@@ -92,8 +113,10 @@ class ExecutionTable:
 
         Performs a final refresh and cleanly stops the Rich Live display.
         """
-        self._refresh()
         self._running = False
+        if self._ticker and self._ticker is not threading.current_thread():
+            self._ticker.join(timeout=0.5)
+        self._refresh()
         self.live.stop()
 
     def _refresh(self):
@@ -115,9 +138,9 @@ class ExecutionTable:
         """
         while self._running:
             self._refresh()
-            time.sleep(0.05)  # 50ms refresh interval
+            time.sleep(0.2)  # 5 FPS is responsive without cursor-write races
 
-    def register_tool(self, tool: str, version: str):
+    def register_tool(self, tool: str, version: str, update_status: str = "pinned"):
         """
         Register a tool with the execution table.
 
@@ -127,7 +150,7 @@ class ExecutionTable:
         self.status[tool] = "queued"
         self.findings[tool] = None
         self.latest_versions[tool] = None
-        self.update_status[tool] = "checking"
+        self.update_status[tool] = update_status
 
     def tool_started(self, tool: str):
         """
@@ -161,14 +184,40 @@ class ExecutionTable:
         self.ended_at[tool] = datetime.now(timezone.utc)
         self._refresh()
 
-    def tool_skipped(self, tool: str):
+    def tool_cached(
+        self,
+        tool: str,
+        findings: Optional[int] = None,
+        duration_seconds: Optional[float] = None,
+    ):
         """
-        Mark a tool as skipped.
+        Mark a tool result as restored from a verified prior run.
 
-        Used when a tool is intentionally not executed.
+        The tool does not execute because its input hash and output artifact
+        still match the completed state recorded by the run.
         """
-        self.status[tool] = "skipped"
+        self.status[tool] = "cached"
+        self.findings[tool] = findings
+        if duration_seconds is not None:
+            self.durations[tool] = max(0.0, duration_seconds)
+        self._refresh()
+
+    def tool_no_input(self, tool: str):
+        """Mark a tool as unnecessary because its input artifact is empty."""
+        self.status[tool] = "no_input"
         self.findings[tool] = None
+        self._refresh()
+
+    def tool_not_applicable(self, tool: str):
+        """Mark a tool as intentionally outside the selected scan profile."""
+        self.status[tool] = "not_applicable"
+        self.findings[tool] = None
+        self._refresh()
+
+    def tool_result_summary(self, tool: str, summary: str):
+        """Replace a raw count with a concise pipeline-aware result summary."""
+
+        self.result_summaries[tool] = summary
         self._refresh()
 
     def _render(self) -> Table:
@@ -190,15 +239,17 @@ class ExecutionTable:
         table.add_column("Update", justify="center", style="bold")
         table.add_column("Status", justify="center")
         table.add_column("Duration", justify="right", style="magenta")
-        table.add_column("Findings", justify="right", style="bold")
+        table.add_column("Results", justify="right", style="bold", no_wrap=True)
 
         for tool in sorted(self.status.keys()):
             # Compute execution duration
             duration = "-"
-            if tool in self.started_at:
+            if tool in self.durations:
+                duration = format_duration(self.durations[tool])
+            elif tool in self.started_at:
                 end = self.ended_at.get(tool)
                 delta = (end or datetime.now(timezone.utc)) - self.started_at[tool]
-                duration = f"{delta.total_seconds():.1f}s"
+                duration = format_duration(delta.total_seconds())
 
             # Status formatting and coloring
             raw_status = self.status[tool]
@@ -209,12 +260,16 @@ class ExecutionTable:
                 status = "[yellow]RUNNING[/yellow]"
             elif raw_status == "done":
                 status = "[green]DONE[/green]"
-            elif raw_status == "skipped":
-                status = "[dim]SKIPPED[/dim]"
+            elif raw_status == "cached":
+                status = "[cyan]CACHED[/cyan]"
+            elif raw_status == "no_input":
+                status = "[dim]NO INPUT[/dim]"
+            elif raw_status == "not_applicable":
+                status = "[dim]N/A[/dim]"
             else:
                 status = "[red]FAILED[/red]"
 
-            findings = (
+            findings = self.result_summaries.get(tool) or (
                 str(self.findings[tool])
                 if self.findings[tool] is not None
                 else "—"
