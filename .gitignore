@@ -73,6 +73,11 @@ outputs/
 report-*.html
 report-*.pdf
 
+# Public, sanitized OWASP Juice Shop examples referenced by README.md.
+# Keep these exceptions narrow so real assessment reports remain ignored.
+!docs/sample-reports/technical-report.pdf
+!docs/sample-reports/stakeholder-report.pdf
+
 # Browser/proxy captures can contain credentials, cookies, tokens, and bodies.
 *.har
 *.burp
